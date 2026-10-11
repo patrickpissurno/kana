@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"],
+  "compilerOptions": {
+    // Environment setup & latest features
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["bun", "vite/client"],
+
+    "rootDirs": [".", "./.react-router/types"],
+
+    "paths": {
+      "~/*": ["./app/*"],
+      "@/*": ["./*"]
+    }
+  }
+}

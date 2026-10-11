@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "oxc.oxc-vscode",
+    "wayou.vscode-todo-highlight",
+    "bradlc.vscode-tailwindcss",
+    "pucelle.run-on-save"
+  ]
+}

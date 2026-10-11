@@ -134,3 +134,19 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+.DS_Store
+.env
+.env.staging
+/node_modules/
+
+# React Router
+/packages/*/.react-router/
+/packages/*/build/
+
+/*.dump
+
+# Local sockets
+*.sock
+.ai-jail

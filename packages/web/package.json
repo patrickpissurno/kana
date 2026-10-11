@@ -1,0 +1,52 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run --bun react-router build",
+    "check": "bun run typecheck && bun run fmt && bun run lint",
+    "dev": "bun run --bun react-router dev",
+    "fmt": "bun run --bun oxfmt",
+    "lint": "bun run --bun oxlint",
+    "shadcn": "bun run --bun ./node_modules/.bin/shadcn",
+    "test": "bun run --bun vitest run",
+    "typecheck": "bun run typegen && bun run --bun tsc",
+    "typegen": "bun run --bun react-router typegen"
+  },
+  "dependencies": {
+    "@base-ui/react": "catalog:",
+    "@fontsource-variable/figtree": "catalog:",
+    "@react-router/fs-routes": "catalog:",
+    "@react-router/node": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "date-fns": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "shadcn": "catalog:",
+    "tw-animate-css": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@react-router/dev": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "happy-dom": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
