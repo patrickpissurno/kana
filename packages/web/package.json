@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
-    "@fontsource-variable/figtree": "catalog:",
+    "@fontsource-variable/inter": "catalog:",
     "@react-router/fs-routes": "catalog:",
     "@react-router/node": "catalog:",
     "class-variance-authority": "catalog:",
