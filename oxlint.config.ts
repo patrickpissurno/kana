@@ -326,6 +326,19 @@ export default defineConfig({
       },
     },
     {
+      files: ['vite.config.ts'],
+      rules: {
+        'import/extensions': [
+          'error',
+          'always',
+          {
+            checkTypeImports: true,
+            ignorePackages: true,
+          },
+        ],
+      },
+    },
+    {
       files: ['**/*.server.ts', '**/*.server.tsx', '**/*.test.ts', '**/*.test.tsx'],
       rules: {
         'import/no-nodejs-modules': 'off',

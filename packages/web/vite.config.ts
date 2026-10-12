@@ -3,7 +3,7 @@ import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { pwaManifestPlugin } from './app/plugins/pwa-manifest-plugin';
+import { pwaManifestPlugin } from './app/plugins/pwa-manifest-plugin.ts';
 
 const EXCLUDE = [
   './app/root.tsx',
