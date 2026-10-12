@@ -134,7 +134,7 @@ export default function Page({}: Route.ComponentProps) {
         className="text-muted-foreground hover:text-foreground mb-5 text-sm font-medium transition-colors"
         aria-label="Home"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="size-5" />
       </Link>
 
       <header className="mb-8 ">
