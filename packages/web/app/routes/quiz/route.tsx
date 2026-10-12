@@ -55,7 +55,7 @@ export default function Page({}: Route.ComponentProps) {
 
   if (!isValidGlyph) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-sm flex-col items-center justify-center p-6 text-center">
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center p-6 text-center">
         <h1 className="text-foreground mb-2 text-2xl font-bold tracking-tight">
           Character Not Found
         </h1>
@@ -70,7 +70,7 @@ export default function Page({}: Route.ComponentProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center p-6">
       <div className="flex w-full flex-col items-center justify-center py-6">
         <QuizComponent glyph={glyph} onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
       </div>

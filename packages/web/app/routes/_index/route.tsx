@@ -14,7 +14,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Page({}: Route.ComponentProps) {
   return (
     <>
-      <main className="flex min-h-dvh flex-col items-center justify-center p-6 text-center">
+      <main className="flex flex-1 flex-col items-center justify-center p-6 text-center">
         <div className="flex max-w-sm flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
             <span className="text-primary text-6xl font-bold tracking-tight">かな</span>

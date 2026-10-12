@@ -9,6 +9,7 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
+import { useDynamicOverscroll } from './helpers/use-dynamic-overscroll';
 import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
 
@@ -56,6 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const activationKey = useWindowReactivation();
+  useDynamicOverscroll();
   const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
 
   return <Outlet context={outletContext} />;
@@ -78,7 +80,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="container mx-auto p-4 pt-16">
+    <main className="container mx-auto flex-1 p-4 pt-16">
       <h1>{message}</h1>
       <p>{details}</p>
       {stack && (
