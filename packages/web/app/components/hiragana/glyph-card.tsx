@@ -31,7 +31,7 @@ export function GlyphCard({
         isPracticedToday ? 'border border-primary ring ring-primary' : 'border border-border/60'
       )}
     >
-      <div className="mb-1 flex h-14 w-full items-center justify-center">
+      <div className="flex h-14 w-full items-center justify-center">
         <span
           className={cn(
             'font-medium tracking-tight text-foreground transition-transform group-hover:scale-105',
@@ -42,7 +42,7 @@ export function GlyphCard({
           {glyph}
         </span>
       </div>
-      <div className="flex w-full flex-row items-center gap-1">
+      <div className={cn('flex w-full flex-row items-center gap-1', cooldownActive ? '' : 'pt-1')}>
         <Progress value={score} className="w-full" aria-label={`Score: ${score}%`} />
         {cooldownActive && <Clock className="size-4 shrink-0 text-taupe-600" strokeWidth={2} />}
       </div>
