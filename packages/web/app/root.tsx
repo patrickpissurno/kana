@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -9,7 +9,7 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
-import { getDb } from './helpers/get-db';
+import { DbGate } from './components/db/db-gate';
 import { useDynamicOverscroll } from './helpers/use-dynamic-overscroll';
 import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
@@ -61,13 +61,11 @@ export default function App() {
   useDynamicOverscroll();
   const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
 
-  useEffect(() => {
-    getDb().catch(() => {
-      // Handled gracefully
-    });
-  }, []);
-
-  return <Outlet context={outletContext} />;
+  return (
+    <DbGate>
+      <Outlet context={outletContext} />
+    </DbGate>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

@@ -1,9 +1,11 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
+import { resetDbForTesting } from './app/helpers/get-db';
 import { createInMemoryIndexedDB } from './app/mocks/in-memory-idb';
 
 beforeEach(() => {
+  resetDbForTesting();
   const fakeIdb = createInMemoryIndexedDB();
   Object.defineProperty(window, 'indexedDB', {
     configurable: true,

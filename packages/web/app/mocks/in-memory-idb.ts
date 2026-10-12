@@ -123,8 +123,11 @@ function createFakeObjectStore(storeState: StoreState) {
   };
 }
 
-function createFakeTransaction(dbState: DatabaseState) {
+function createFakeTransaction(dbState: DatabaseState, onAbort?: () => void) {
   return {
+    abort() {
+      onAbort?.();
+    },
     objectStore(name: string) {
       let store = dbState.stores.get(name);
       if (!store) {
@@ -177,8 +180,8 @@ export function createInMemoryIndexedDB(): IDBFactory {
 
   const factory: IDBFactory = {
     open(name: string, version?: number) {
-      const targetVersion = version ?? 1;
       let dbState = dbs.get(name);
+      const targetVersion = version ?? (dbState ? dbState.version : 1);
       const isNew = !dbState;
       const oldVersion = dbState ? dbState.version : 0;
       const needsUpgrade = isNew || targetVersion > oldVersion;
@@ -200,14 +203,21 @@ export function createInMemoryIndexedDB(): IDBFactory {
 
       queueMicrotask(() => {
         req.result = fakeDb;
+        const abortState = { isAborted: false };
         if (needsUpgrade && req.onupgradeneeded) {
-          const versionTx = createFakeTransaction(dbState) as unknown as IDBTransaction;
+          const versionTx = createFakeTransaction(dbState, () => {
+            abortState.isAborted = true;
+          }) as unknown as IDBTransaction;
           req.transaction = versionTx;
           const event = Object.assign(new Event('upgradeneeded'), {
             oldVersion,
             newVersion: targetVersion,
           }) as IDBVersionChangeEvent;
           req.onupgradeneeded(event);
+        }
+        if (abortState.isAborted) {
+          req.triggerError(new DOMException('The transaction was aborted', 'AbortError'));
+          return;
         }
         req.triggerSuccess(fakeDb);
       });
