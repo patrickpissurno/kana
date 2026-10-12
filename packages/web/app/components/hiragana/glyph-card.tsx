@@ -1,4 +1,5 @@
 import { cn } from 'cn';
+import { Clock } from 'lucide-react';
 import { Link } from 'react-router';
 import { Progress } from '../ui/progress';
 
@@ -7,11 +8,18 @@ export type GlyphCardProps = {
   score: number;
   isPracticedToday: boolean;
   loading: boolean;
+  cooldownActive: boolean;
 };
 
 const SINGLE_CHAR_LENGTH = 1;
 
-export function GlyphCard({ glyph, score, isPracticedToday, loading }: GlyphCardProps) {
+export function GlyphCard({
+  glyph,
+  score,
+  isPracticedToday,
+  loading,
+  cooldownActive,
+}: GlyphCardProps) {
   const isDigraph = glyph.length > SINGLE_CHAR_LENGTH;
 
   return (
@@ -23,7 +31,7 @@ export function GlyphCard({ glyph, score, isPracticedToday, loading }: GlyphCard
         isPracticedToday ? 'border border-primary ring ring-primary' : 'border border-border/60'
       )}
     >
-      <div className="flex h-14 w-full items-center justify-center">
+      <div className="mb-1 flex h-14 w-full items-center justify-center">
         <span
           className={cn(
             'font-medium tracking-tight text-foreground transition-transform group-hover:scale-105',
@@ -34,8 +42,9 @@ export function GlyphCard({ glyph, score, isPracticedToday, loading }: GlyphCard
           {glyph}
         </span>
       </div>
-      <div className="w-full pt-1">
-        <Progress value={score} className="h-1.5 w-full" aria-label={`Score: ${score}%`} />
+      <div className="flex w-full flex-row items-center gap-1">
+        <Progress value={score} className="w-full" aria-label={`Score: ${score}%`} />
+        {cooldownActive && <Clock className="size-4 shrink-0 text-taupe-600" strokeWidth={2} />}
       </div>
     </Link>
   );
