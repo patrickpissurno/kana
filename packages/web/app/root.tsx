@@ -9,7 +9,6 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
-import { InstallBanner } from './components/pwa/install-banner';
 import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
 
@@ -59,12 +58,7 @@ export default function App() {
   const activationKey = useWindowReactivation();
   const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
 
-  return (
-    <>
-      <Outlet context={outletContext} />
-      <InstallBanner />
-    </>
-  );
+  return <Outlet context={outletContext} />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
