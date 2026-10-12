@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -8,6 +9,8 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
+import { InstallBanner } from './components/pwa/install-banner';
+import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
 
 const NOT_FOUND = 404;
@@ -53,7 +56,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const activationKey = useWindowReactivation();
+  const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
+
+  return (
+    <>
+      <Outlet context={outletContext} />
+      <InstallBanner />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

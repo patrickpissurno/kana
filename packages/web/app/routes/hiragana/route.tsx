@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
 import type { GlyphItem } from '../../components/hiragana/glyph-section';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
@@ -82,6 +82,8 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
 }
 
 export default function Page({}: Route.ComponentProps) {
+  const outletContext = useOutletContext<{ activationKey?: number } | null>();
+  const activationKey = outletContext?.activationKey;
   const [sections, setSections] = useState<SectionState[]>(getInitialSections);
   const [loading, setLoading] = useState(true);
 
@@ -130,7 +132,7 @@ export default function Page({}: Route.ComponentProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activationKey]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-4 py-6 sm:py-10">

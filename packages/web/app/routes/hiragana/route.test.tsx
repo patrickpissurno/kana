@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { useEffect, useState } from 'react';
+import { createRoutesStub, MemoryRouter, Outlet } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
@@ -16,6 +17,9 @@ const TEST_EVENT_ID_2 = 2;
 const TEST_EVENT_ID_3 = 3;
 const TIMESTAMP_NOW = 1700000000000;
 const TIMESTAMP_LATER = 1700000005000;
+const INITIAL_ACTIVATION_KEY = 1000;
+const UPDATED_ACTIVATION_KEY = 2000;
+const EXPECTED_CALL_COUNT_TWICE = 2;
 
 describe('Hiragana Route', () => {
   beforeEach(() => {
@@ -135,5 +139,48 @@ describe('Hiragana Route', () => {
       .map((el) => el.getAttribute('aria-label'));
 
     expect(remountLinks).toEqual(initialLinks);
+  });
+
+  it('reloads events when activationKey changes', async () => {
+    vi.mocked(loadAllQuizEvents).mockResolvedValue([]);
+
+    let setKeyFn: ((key: number) => void) | undefined = undefined;
+
+    function Parent() {
+      const [key, setKey] = useState(INITIAL_ACTIVATION_KEY);
+
+      useEffect(() => {
+        setKeyFn = setKey;
+      }, []);
+
+      return <Outlet context={{ activationKey: key }} />;
+    }
+
+    const Stub = createRoutesStub([
+      {
+        path: '/',
+        Component: Parent,
+        children: [
+          {
+            index: true,
+            Component: () => <Page {...({} as unknown as Route.ComponentProps)} />,
+          },
+        ],
+      },
+    ]);
+
+    render(<Stub initialEntries={['/']} />);
+
+    await waitFor(() => {
+      expect(loadAllQuizEvents).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      setKeyFn?.(UPDATED_ACTIVATION_KEY);
+    });
+
+    await waitFor(() => {
+      expect(loadAllQuizEvents).toHaveBeenCalledTimes(EXPECTED_CALL_COUNT_TWICE);
+    });
   });
 });
