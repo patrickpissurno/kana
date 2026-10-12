@@ -74,10 +74,6 @@ export default function Page({}: Route.ComponentProps) {
       <div className="flex w-full flex-col items-center justify-center py-6">
         <QuizComponent glyph={glyph} onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
       </div>
-
-      <footer className="mt-4 text-center">
-        <span className="text-muted-foreground text-xs">Single-character quiz</span>
-      </footer>
     </main>
   );
 }
