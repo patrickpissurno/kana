@@ -3,16 +3,24 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { GlyphSection } from './glyph-section';
 
+const SCORE_ZERO = 0;
+const SCORE_TEN = 10;
+
 describe('GlyphSection', () => {
-  it('renders section title, description, and cards', () => {
+  it('renders section title, description, and cards with loading prop', () => {
     const entries = [
-      { glyph: 'あ', score: 0, isPracticedToday: false },
-      { glyph: 'い', score: 10, isPracticedToday: true },
+      { glyph: 'あ', score: SCORE_ZERO, isPracticedToday: false },
+      { glyph: 'い', score: SCORE_TEN, isPracticedToday: true },
     ];
 
     render(
       <MemoryRouter>
-        <GlyphSection title="Gojūon (五十音)" description="46 basic characters" entries={entries} />
+        <GlyphSection
+          title="Gojūon (五十音)"
+          description="46 basic characters"
+          entries={entries}
+          loading={false}
+        />
       </MemoryRouter>
     );
 
