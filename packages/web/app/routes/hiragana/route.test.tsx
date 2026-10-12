@@ -100,4 +100,40 @@ describe('Hiragana Route', () => {
     resolveEvents([]);
     await Promise.resolve();
   });
+
+  it('preserves initial shuffled order across multiple mounts', async () => {
+    vi.mocked(loadAllQuizEvents).mockResolvedValue([]);
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <Page {...({} as unknown as Route.ComponentProps)} />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /practice あ/i })).toBeInTheDocument();
+    });
+
+    const initialLinks = screen
+      .getAllByRole('link', { name: /^practice /i })
+      .map((el) => el.getAttribute('aria-label'));
+
+    unmount();
+
+    render(
+      <MemoryRouter>
+        <Page {...({} as unknown as Route.ComponentProps)} />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /practice あ/i })).toBeInTheDocument();
+    });
+
+    const remountLinks = screen
+      .getAllByRole('link', { name: /^practice /i })
+      .map((el) => el.getAttribute('aria-label'));
+
+    expect(remountLinks).toEqual(initialLinks);
+  });
 });

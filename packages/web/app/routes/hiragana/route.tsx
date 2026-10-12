@@ -26,22 +26,20 @@ type SectionState = {
 
 const INITIAL_SCORE = 0;
 
-function buildInitialSections(): SectionState[] {
-  return HIRAGANA_SECTIONS.map((section) => {
-    const shuffled = shuffleArray(section.entries);
-    const entries: GlyphItem[] = shuffled.map((entry) => ({
-      glyph: entry.glyph,
-      score: INITIAL_SCORE,
-      isPracticedToday: false,
-    }));
-    return {
-      id: section.id,
-      title: section.title,
-      description: section.description,
-      entries,
-    };
-  });
-}
+const INITIAL_SECTIONS: SectionState[] = HIRAGANA_SECTIONS.map((section) => {
+  const shuffled = shuffleArray(section.entries);
+  const entries: GlyphItem[] = shuffled.map((entry) => ({
+    glyph: entry.glyph,
+    score: INITIAL_SCORE,
+    isPracticedToday: false,
+  }));
+  return {
+    id: section.id,
+    title: section.title,
+    description: section.description,
+    entries,
+  };
+});
 
 function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
   const map = new Map<string, QuizEvent[]>();
@@ -57,7 +55,7 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
 }
 
 export default function Page({}: Route.ComponentProps) {
-  const [sections, setSections] = useState<SectionState[]>(buildInitialSections);
+  const [sections, setSections] = useState<SectionState[]>(() => structuredClone(INITIAL_SECTIONS));
 
   useEffect(() => {
     let isMounted = true;
