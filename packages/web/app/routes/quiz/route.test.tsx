@@ -83,7 +83,8 @@ describe('Quiz Route', () => {
       expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_ID, 'correct');
     });
 
-    expect(screen.getByText('Correct!')).toBeInTheDocument();
+    expect(screen.getByText(/correct! answer:/i)).toBeInTheDocument();
+    expect(screen.getByText('a')).toBeInTheDocument();
   });
 
   it('updates to wrong upon wrong answer', async () => {
@@ -128,7 +129,7 @@ describe('Quiz Route', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Correct!')).toBeInTheDocument();
+      expect(screen.getByText(/correct! answer:/i)).toBeInTheDocument();
     });
 
     expect(updateQuizEvent).toHaveBeenCalledTimes(CALL_COUNT_ZERO);

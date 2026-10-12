@@ -70,21 +70,12 @@ export default function Page({}: Route.ComponentProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-between p-6">
-      <header className="flex w-full items-center justify-between pt-2">
-        <Link
-          to="/hiragana"
-          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-        >
-          ← Hiragana
-        </Link>
-      </header>
-
-      <div className="flex w-full flex-col items-center justify-center py-10">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6">
+      <div className="flex w-full flex-col items-center justify-center py-6">
         <QuizComponent glyph={glyph} onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
       </div>
 
-      <footer className="pb-4 text-center">
+      <footer className="mt-4 text-center">
         <span className="text-muted-foreground text-xs">Single-character quiz</span>
       </footer>
     </main>

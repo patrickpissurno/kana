@@ -8,7 +8,43 @@ const CALL_COUNT_ZERO = 0;
 const CALL_COUNT_ONE = 1;
 
 describe('RomajiInputQuiz', () => {
-  it('renders a single-char glyph and handles correct submission', async () => {
+  it('disables submit button when input is blank and enables when typed', async () => {
+    const user = userEvent.setup();
+    const handleCorrect = vi.fn<() => void>();
+    const handleWrong = vi.fn<() => void>();
+
+    render(
+      <MemoryRouter>
+        <RomajiInputQuiz glyph="あ" onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
+      </MemoryRouter>
+    );
+
+    const input = screen.getByRole('textbox', { name: /romaji input/i });
+    const submitButton = screen.getByRole('button', { name: /submit/i });
+
+    // Initially blank -> disabled
+    expect(submitButton).toBeDisabled();
+
+    // Type spaces only -> remains disabled
+    await user.type(input, '   ');
+    expect(submitButton).toBeDisabled();
+
+    // Blur on whitespace -> trims value to empty
+    fireEvent.blur(input);
+    expect(input).toHaveValue('');
+    expect(submitButton).toBeDisabled();
+
+    // Type valid text -> becomes enabled
+    await user.type(input, ' a ');
+    expect(submitButton).not.toBeDisabled();
+
+    // Blur on valid text -> trims value
+    fireEvent.blur(input);
+    expect(input).toHaveValue('a');
+    expect(submitButton).not.toBeDisabled();
+  });
+
+  it('renders a single-char glyph and handles correct submission with state theming', async () => {
     const user = userEvent.setup();
     const handleCorrect = vi.fn<() => void>();
     const handleWrong = vi.fn<() => void>();
@@ -20,30 +56,38 @@ describe('RomajiInputQuiz', () => {
     );
 
     const glyphDisplay = screen.getByText('あ');
-    expect(glyphDisplay).toHaveClass('text-7xl');
+    expect(glyphDisplay).toHaveClass('text-7xl', 'text-foreground');
 
     const input = screen.getByRole('textbox', { name: /romaji input/i });
-    expect(input).toBeInTheDocument();
-    expect(input).not.toBeDisabled();
-
     const submitButton = screen.getByRole('button', { name: /submit/i });
-    expect(submitButton).toBeInTheDocument();
 
     await user.type(input, '  A  ');
+    expect(submitButton).not.toBeDisabled();
     await user.click(submitButton);
 
     expect(handleCorrect).toHaveBeenCalledTimes(CALL_COUNT_ONE);
     expect(handleWrong).toHaveBeenCalledTimes(CALL_COUNT_ZERO);
-    expect(screen.getByText('Correct!')).toBeInTheDocument();
+
+    // Box theming check
+    const boxContainer = glyphDisplay.parentElement;
+    expect(boxContainer).toHaveClass('border-emerald-500/40', 'bg-emerald-500/10');
+    expect(glyphDisplay).not.toHaveClass('text-foreground');
+
+    // Input field and buttons hidden altogether
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /i don't know/i })).not.toBeInTheDocument();
+
+    // Success copy contains user answer
+    expect(screen.getByText(/correct! answer:/i)).toBeInTheDocument();
+    expect(screen.getByText('a')).toBeInTheDocument();
 
     const continueLink = screen.getByRole('link', { name: /continue/i });
     expect(continueLink).toBeInTheDocument();
     expect(continueLink).toHaveAttribute('href', '/hiragana');
-    expect(input).toBeDisabled();
-    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
   });
 
-  it('renders a digraph glyph and handles wrong submission', async () => {
+  it('renders a digraph glyph and handles wrong submission with hint text', async () => {
     const user = userEvent.setup();
     const handleCorrect = vi.fn<() => void>();
     const handleWrong = vi.fn<() => void>();
@@ -55,7 +99,7 @@ describe('RomajiInputQuiz', () => {
     );
 
     const glyphDisplay = screen.getByText('きゃ');
-    expect(glyphDisplay).toHaveClass('text-6xl');
+    expect(glyphDisplay).toHaveClass('text-6xl', 'text-foreground');
 
     const input = screen.getByRole('textbox', { name: /romaji input/i });
     await user.type(input, 'ka');
@@ -63,38 +107,63 @@ describe('RomajiInputQuiz', () => {
 
     expect(handleWrong).toHaveBeenCalledTimes(CALL_COUNT_ONE);
     expect(handleCorrect).toHaveBeenCalledTimes(CALL_COUNT_ZERO);
-    expect(screen.getByText(/the reading is/i)).toBeInTheDocument();
+
+    // Box theming check
+    const boxContainer = glyphDisplay.parentElement;
+    expect(boxContainer).toHaveClass('border-destructive/40', 'bg-destructive/10');
+
+    // Input field hidden altogether
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    // Canonical reading and user answer hint
+    expect(screen.getByText(/incorrect. the reading is/i)).toBeInTheDocument();
     expect(screen.getByText('kya')).toBeInTheDocument();
+    expect(screen.getByText(/you answered:/i)).toBeInTheDocument();
+    expect(screen.getByText('ka')).toBeInTheDocument();
 
     const continueLink = screen.getByRole('link', { name: /continue/i });
     expect(continueLink).toBeInTheDocument();
     expect(continueLink).toHaveAttribute('href', '/hiragana');
   });
 
-  it('prevents re-submission if already answered', async () => {
+  it('handles "I don\'t know" button triggering failed state without "Incorrect." and without hint', async () => {
     const user = userEvent.setup();
     const handleCorrect = vi.fn<() => void>();
     const handleWrong = vi.fn<() => void>();
 
-    const { container } = render(
+    render(
       <MemoryRouter>
-        <RomajiInputQuiz glyph="い" onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
+        <RomajiInputQuiz glyph="き" onCorrectAnswer={handleCorrect} onWrongAnswer={handleWrong} />
       </MemoryRouter>
     );
 
-    const input = screen.getByRole('textbox', { name: /romaji input/i });
-    await user.type(input, 'i');
-    await user.click(screen.getByRole('button', { name: /submit/i }));
+    const glyphDisplay = screen.getByText('き');
+    const dontKnowButton = screen.getByRole('button', { name: /i don't know/i });
+    expect(dontKnowButton).toBeInTheDocument();
 
-    expect(handleCorrect).toHaveBeenCalledTimes(CALL_COUNT_ONE);
+    await user.click(dontKnowButton);
 
-    // Manually trigger submit event on form when state is already answered
-    const form = container.querySelector('form');
-    if (form) {
-      fireEvent.submit(form);
-    }
+    expect(handleWrong).toHaveBeenCalledTimes(CALL_COUNT_ONE);
+    expect(handleCorrect).toHaveBeenCalledTimes(CALL_COUNT_ZERO);
 
-    expect(handleCorrect).toHaveBeenCalledTimes(CALL_COUNT_ONE);
+    // Box theming check
+    const boxContainer = glyphDisplay.parentElement;
+    expect(boxContainer).toHaveClass('border-destructive/40', 'bg-destructive/10');
+
+    // Form hidden altogether
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /i don't know/i })).not.toBeInTheDocument();
+
+    // Copy omits "Incorrect." and shows "The reading is ki"
+    expect(screen.getByText(/the reading is/i)).toBeInTheDocument();
+    expect(screen.queryByText(/incorrect/i)).not.toBeInTheDocument();
+    expect(screen.getByText('ki')).toBeInTheDocument();
+
+    // Hint text omitted
+    expect(screen.queryByText(/you answered:/i)).not.toBeInTheDocument();
+
+    const continueLink = screen.getByRole('link', { name: /continue/i });
+    expect(continueLink).toBeInTheDocument();
   });
 
   it('handles empty or non-string form data and unknown glyph fallback', () => {
