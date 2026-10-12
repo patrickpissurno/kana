@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { GlyphItem } from '../../components/hiragana/glyph-section';
@@ -128,21 +129,19 @@ export default function Page({}: Route.ComponentProps) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-4 py-6 sm:py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-            ひらがな Hiragana
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Select any character to practice. Sorted by mastery.
-          </p>
-        </div>
-        <Link
-          to="/"
-          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-        >
-          Home
-        </Link>
+      <Link
+        to="/"
+        className="text-muted-foreground hover:text-foreground mb-5 text-sm font-medium transition-colors"
+        aria-label="Home"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Link>
+
+      <header className="mb-8 ">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+          ひらがな Hiragana
+        </h1>
+        <p className="text-muted-foreground text-sm">Select any character to practice</p>
       </header>
 
       <div className="flex flex-col gap-6">
