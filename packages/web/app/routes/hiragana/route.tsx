@@ -26,20 +26,43 @@ type SectionState = {
 
 const INITIAL_SCORE = 0;
 
-const INITIAL_SECTIONS: SectionState[] = HIRAGANA_SECTIONS.map((section) => {
-  const shuffled = shuffleArray(section.entries);
-  const entries: GlyphItem[] = shuffled.map((entry) => ({
+const CANONICAL_SECTIONS: SectionState[] = HIRAGANA_SECTIONS.map((section) => ({
+  id: section.id,
+  title: section.title,
+  description: section.description,
+  entries: section.entries.map((entry) => ({
     glyph: entry.glyph,
     score: INITIAL_SCORE,
     isPracticedToday: false,
-  }));
-  return {
-    id: section.id,
-    title: section.title,
-    description: section.description,
-    entries,
-  };
-});
+  })),
+}));
+
+let sessionShuffledSections: SectionState[] | null = null;
+
+function getSessionSections(): SectionState[] {
+  sessionShuffledSections ??= HIRAGANA_SECTIONS.map((section) => {
+    const shuffled = shuffleArray(section.entries);
+    const entries: GlyphItem[] = shuffled.map((entry) => ({
+      glyph: entry.glyph,
+      score: INITIAL_SCORE,
+      isPracticedToday: false,
+    }));
+    return {
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      entries,
+    };
+  });
+  return sessionShuffledSections;
+}
+
+function getInitialSections(): SectionState[] {
+  if (sessionShuffledSections) {
+    return structuredClone(sessionShuffledSections);
+  }
+  return structuredClone(CANONICAL_SECTIONS);
+}
 
 function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
   const map = new Map<string, QuizEvent[]>();
@@ -55,7 +78,7 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
 }
 
 export default function Page({}: Route.ComponentProps) {
-  const [sections, setSections] = useState<SectionState[]>(() => structuredClone(INITIAL_SECTIONS));
+  const [sections, setSections] = useState<SectionState[]>(getInitialSections);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,31 +90,32 @@ export default function Page({}: Route.ComponentProps) {
         }
 
         const eventsByGlyph = groupEventsByGlyph(events);
+        const baseline = getSessionSections();
 
-        setSections((prevSections) =>
-          prevSections.map((section) => {
-            const updated = section.entries.map((entry) => {
-              const glyphEvents = eventsByGlyph.get(entry.glyph) ?? [];
-              const score = calculateGlyphScore(glyphEvents);
-              const practiced = isPracticedToday(glyphEvents);
-              return {
-                glyph: entry.glyph,
-                score,
-                isPracticedToday: practiced,
-              };
-            });
-
-            updated.sort((a, b) => b.score - a.score);
-
+        const updated = baseline.map((section) => {
+          const entries = section.entries.map((entry) => {
+            const glyphEvents = eventsByGlyph.get(entry.glyph) ?? [];
+            const score = calculateGlyphScore(glyphEvents);
+            const practiced = isPracticedToday(glyphEvents);
             return {
-              ...section,
-              entries: updated,
+              glyph: entry.glyph,
+              score,
+              isPracticedToday: practiced,
             };
-          })
-        );
+          });
+
+          entries.sort((a, b) => b.score - a.score);
+
+          return {
+            ...section,
+            entries,
+          };
+        });
+
+        setSections(updated);
       })
       .catch(() => {
-        // Retain initial fallback on IDB load failure
+        setSections(structuredClone(getSessionSections()));
       });
 
     return () => {
