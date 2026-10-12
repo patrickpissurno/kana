@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from 'react-router';
 import type { Route } from './+types/root';
+import { PWA_ICONS } from './assets/icons';
 import './app.css';
 
 const NOT_FOUND = 404;
@@ -29,7 +30,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en" className="dark">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#141414" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Kana" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href={PWA_ICONS.appleTouchIcon} />
+        <link rel="icon" type="image/svg+xml" href={PWA_ICONS.iconSvg} />
+        <link rel="icon" type="image/png" sizes="192x192" href={PWA_ICONS.icon192} />
         <Meta />
         <Links />
       </head>

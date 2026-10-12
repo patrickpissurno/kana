@@ -2,6 +2,8 @@
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { pwaManifestPlugin } from './app/plugins/pwa-manifest-plugin';
 
 const EXCLUDE = [
   './app/root.tsx',
@@ -9,13 +11,42 @@ const EXCLUDE = [
   './app/entry.client.tsx',
   './app/routes.ts',
   './app/mocks/**/*',
-  './app/plugins/**/*',
 ];
 
 const ENV = process.env as Record<string, string>;
 
 export default defineConfig({
-  plugins: [tailwindcss(), ...(ENV['VITEST'] ? [] : [reactRouter()])],
+  plugins: [
+    tailwindcss(),
+    ...(ENV['VITEST']
+      ? []
+      : [
+          reactRouter(),
+          pwaManifestPlugin(),
+          VitePWA({
+            outDir: 'build/client',
+            registerType: 'autoUpdate',
+            injectRegister: false,
+            manifest: false,
+            workbox: {
+              globDirectory: 'build/client',
+              globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
+              navigateFallback: '/index.html',
+              cleanupOutdatedCaches: true,
+              runtimeCaching: [
+                {
+                  urlPattern: ({ request }) => request.mode === 'navigate',
+                  handler: 'NetworkFirst',
+                  options: {
+                    cacheName: 'pages-cache',
+                    networkTimeoutSeconds: 3,
+                  },
+                },
+              ],
+            },
+          }),
+        ]),
+  ],
   resolve: {
     tsconfigPaths: true,
   },
