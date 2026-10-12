@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getDb, GLYPH_INDEX, STORE_NAME, TIMESTAMP_INDEX } from './get-db';
+import { getDb, GLYPH_INDEX, STORE_NAME } from './get-db';
+
+const V1_VERSION = 1;
+const V2_VERSION = 2;
+const TEST_TIMESTAMP = 12_345;
+const TEST_LEGACY_ID = 1;
 
 describe('getDb', () => {
   it('opens kana_db and creates object store with indexes on upgrade', async () => {
@@ -10,6 +15,52 @@ describe('getDb', () => {
 
   it('resolves successfully on subsequent calls without error', async () => {
     const db = await getDb();
+    expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
+  });
+
+  it('migrates existing records from v1 to v2 stripping id', async () => {
+    const v1Req = indexedDB.open('kana_db', V1_VERSION);
+    v1Req.onupgradeneeded = () => {
+      const db = v1Req.result;
+      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      store.add({
+        id: TEST_LEGACY_ID,
+        glyph: 'あ',
+        timestamp: TEST_TIMESTAMP,
+        result: 'correct',
+      });
+    };
+    await new Promise<void>((resolve) => {
+      v1Req.onsuccess = () => resolve();
+    });
+
+    const db = await getDb();
+    expect(db.version).toBe(V2_VERSION);
+
+    const tx = db.transaction([STORE_NAME], 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const getReq = store.get(TEST_TIMESTAMP);
+
+    const record = await new Promise<Record<string, unknown>>((resolve) => {
+      getReq.onsuccess = () => resolve(getReq.result as Record<string, unknown>);
+    });
+
+    expect(record).toEqual({
+      glyph: 'あ',
+      timestamp: TEST_TIMESTAMP,
+      result: 'correct',
+    });
+    expect(record['id']).toBeUndefined();
+  });
+
+  it('creates store when upgrading from v1 if store did not previously exist', async () => {
+    const v1Req = indexedDB.open('kana_db', V1_VERSION);
+    await new Promise<void>((resolve) => {
+      v1Req.onsuccess = () => resolve();
+    });
+
+    const db = await getDb();
+    expect(db.version).toBe(V2_VERSION);
     expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
   });
 
@@ -65,6 +116,5 @@ describe('getDb', () => {
   it('exports correct index and store constants', () => {
     expect(STORE_NAME).toBe('quiz_events');
     expect(GLYPH_INDEX).toBe('by_glyph');
-    expect(TIMESTAMP_INDEX).toBe('by_timestamp');
   });
 });

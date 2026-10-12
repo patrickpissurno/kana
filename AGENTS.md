@@ -46,7 +46,7 @@ Gotchas:
 - **Testing Hidden UI (Happy-DOM & Tailwind):** Happy-DOM does not evaluate CSS rules, which means testing library queries like `getByText` will match elements even if they have Tailwind's `hidden` class applied. To reliably test conditional rendering or view transitions, assert against elements that are entirely unmounted from the DOM (e.g., a conditionally rendered button) rather than checking for text inside a visually hidden container.
 
 ## Architecture Decisions & Constraints:
-- **Persistence (IndexedDB):** Stored in `kana_db` (v1) under `quiz_events` object store (`id` auto-increment primary key, indexed by `by_glyph` and `by_timestamp`). Event-sourced ledger records `{ id, glyph, timestamp, result }` where result is `'correct' | 'wrong' | 'skipped'`. On quiz load, a `'skipped'` entry is recorded and later updated upon answer submission.
+- **Persistence (IndexedDB):** Stored in `kana_db` (v2) under `quiz_events` object store (`timestamp` primary key in UTC milliseconds, indexed by `by_glyph`). Event-sourced ledger records `{ glyph, timestamp, result }` where result is `'correct' | 'wrong' | 'skipped'`. On quiz load, a `'skipped'` entry is recorded and later updated upon answer submission.
 - **Kana Dataset (104 Entries across 4 Sections):**
   1. *Gojūon (五十音)*: 46 basic characters (あ–ん)
   2. *Dakuten (濁点)*: 20 voiced characters (が–ぼ)

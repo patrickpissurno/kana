@@ -1,14 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { appendQuizEvent } from './append-quiz-event';
 
-describe('appendQuizEvent', () => {
-  it('appends an event with skipped result and returns the generated ID', async () => {
-    const id1 = await appendQuizEvent('あ');
-    const id2 = await appendQuizEvent('い');
+const INITIAL_TIME = 1_700_000_000_000;
+const SUBSEQUENT_TIME = 1_700_000_001_000;
 
-    expect(typeof id1).toBe('number');
-    expect(typeof id2).toBe('number');
-    expect(id2).toBeGreaterThan(id1);
+describe('appendQuizEvent', () => {
+  it('appends an event with skipped result and returns the generated timestamp', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(INITIAL_TIME);
+    const timestamp1 = await appendQuizEvent('あ');
+    vi.setSystemTime(SUBSEQUENT_TIME);
+    const timestamp2 = await appendQuizEvent('い');
+    vi.useRealTimers();
+
+    expect(typeof timestamp1).toBe('number');
+    expect(typeof timestamp2).toBe('number');
+    expect(timestamp1).toBe(INITIAL_TIME);
+    expect(timestamp2).toBe(SUBSEQUENT_TIME);
+    expect(timestamp2).toBeGreaterThan(timestamp1);
   });
 
   it('rejects when store.add triggers an error with DOMException', async () => {

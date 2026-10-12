@@ -2,7 +2,7 @@ import type { QuizEvent, QuizResult } from '../types/quiz';
 import { getDb, STORE_NAME } from './get-db';
 
 export async function updateQuizEvent(
-  id: number,
+  timestamp: number,
   result: Exclude<QuizResult, 'skipped'>
 ): Promise<void> {
   const db = await getDb();
@@ -10,12 +10,12 @@ export async function updateQuizEvent(
     const tx = db.transaction([STORE_NAME], 'readwrite');
     const store = tx.objectStore(STORE_NAME);
 
-    const getRequest = store.get(id);
+    const getRequest = store.get(timestamp);
 
     getRequest.onsuccess = () => {
       const record = getRequest.result as QuizEvent | undefined;
       if (!record) {
-        reject(new Error(`Quiz event with id ${id} not found`));
+        reject(new Error(`Quiz event with timestamp ${timestamp} not found`));
         return;
       }
 

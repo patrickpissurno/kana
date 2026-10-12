@@ -12,9 +12,6 @@ vi.mock('../../helpers/load-all-quiz-events', () => ({
 }));
 
 const EXPECTED_META_COUNT = 2;
-const TEST_EVENT_ID_1 = 1;
-const TEST_EVENT_ID_2 = 2;
-const TEST_EVENT_ID_3 = 3;
 const TIMESTAMP_NOW = 1700000000000;
 const TIMESTAMP_LATER = 1700000005000;
 const INITIAL_ACTIVATION_KEY = 1000;
@@ -35,19 +32,16 @@ describe('Hiragana Route', () => {
   it('renders all sections and updates scores from IndexedDB', async () => {
     const mockEvents: QuizEvent[] = [
       {
-        id: TEST_EVENT_ID_1,
         glyph: 'あ',
         timestamp: TIMESTAMP_NOW,
         result: 'correct',
       },
       {
-        id: TEST_EVENT_ID_2,
         glyph: 'あ',
         timestamp: TIMESTAMP_LATER,
         result: 'correct',
       },
       {
-        id: TEST_EVENT_ID_3,
         glyph: 'い',
         timestamp: TIMESTAMP_NOW,
         result: 'wrong',

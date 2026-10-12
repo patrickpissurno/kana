@@ -16,7 +16,7 @@ vi.mock('../../helpers/update-quiz-event', () => ({
 }));
 
 const EXPECTED_META_COUNT = 2;
-const TEST_EVENT_ID = 42;
+const TEST_EVENT_TIMESTAMP = 1_700_000_000_000;
 const CALL_COUNT_ONE = 1;
 const CALL_COUNT_ZERO = 0;
 
@@ -62,7 +62,7 @@ describe('Quiz Route', () => {
 
   it('logs skipped event on load and updates to correct upon correct answer', async () => {
     const user = userEvent.setup();
-    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_ID);
+    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_TIMESTAMP);
     vi.mocked(updateQuizEvent).mockResolvedValue();
 
     render(
@@ -80,7 +80,7 @@ describe('Quiz Route', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_ID, 'correct');
+      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, 'correct');
     });
 
     expect(screen.getByText(/correct! answer:/i)).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe('Quiz Route', () => {
 
   it('updates to wrong upon wrong answer', async () => {
     const user = userEvent.setup();
-    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_ID);
+    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_TIMESTAMP);
     vi.mocked(updateQuizEvent).mockResolvedValue();
 
     render(
@@ -105,7 +105,7 @@ describe('Quiz Route', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_ID, 'wrong');
+      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, 'wrong');
     });
 
     expect(screen.getByText(/the reading is/i)).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe('Quiz Route', () => {
 
   it('handles updateQuizEvent rejection gracefully for correct answer', async () => {
     const user = userEvent.setup();
-    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_ID);
+    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_TIMESTAMP);
     vi.mocked(updateQuizEvent).mockRejectedValue(new Error('Update error'));
 
     render(
@@ -183,7 +183,7 @@ describe('Quiz Route', () => {
 
   it('handles updateQuizEvent rejection gracefully for wrong answer', async () => {
     const user = userEvent.setup();
-    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_ID);
+    vi.mocked(appendQuizEvent).mockResolvedValue(TEST_EVENT_TIMESTAMP);
     vi.mocked(updateQuizEvent).mockRejectedValue(new Error('Update error'));
 
     render(

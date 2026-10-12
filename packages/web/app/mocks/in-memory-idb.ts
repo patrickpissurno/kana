@@ -24,6 +24,7 @@ type FakeRequest<T> = {
 
 type FakeOpenRequest = FakeRequest<unknown> & {
   onupgradeneeded: ((event: IDBVersionChangeEvent) => void) | null;
+  transaction: IDBTransaction | null;
 };
 
 function createFakeRequest<T>(): FakeRequest<T> {
@@ -67,49 +68,50 @@ function createFakeIndex(storeState: StoreState, keyPath: string) {
 }
 
 function createFakeObjectStore(storeState: StoreState) {
+  const keyPath = storeState.keyPath ?? 'id';
   return {
-    createIndex(name: string, keyPath: string) {
-      storeState.indices.set(name, keyPath);
-      return createFakeIndex(storeState, keyPath);
+    createIndex(name: string, indexKeyPath: string) {
+      storeState.indices.set(name, indexKeyPath);
+      return createFakeIndex(storeState, indexKeyPath);
     },
     index(name: string) {
-      const keyPath = storeState.indices.get(name) ?? name;
-      return createFakeIndex(storeState, keyPath);
+      const indexKeyPath = storeState.indices.get(name) ?? name;
+      return createFakeIndex(storeState, indexKeyPath);
     },
     add(value: StoredRecord) {
       const req = createFakeRequest<number | string>();
       const record = { ...value };
-      let id = record['id'];
+      let key = record[keyPath];
 
-      if (storeState.autoIncrement && id === undefined) {
+      if (storeState.autoIncrement && key === undefined) {
         storeState.autoIncrementId += 1;
-        id = storeState.autoIncrementId;
-        record['id'] = id;
+        key = storeState.autoIncrementId;
+        record[keyPath] = key;
       }
 
       storeState.records.push(record);
-      req.triggerSuccess(id as number | string);
+      req.triggerSuccess(key as number | string);
       return req;
     },
-    get(id: unknown) {
+    get(key: unknown) {
       const req = createFakeRequest<StoredRecord | undefined>();
-      const record = storeState.records.find((r) => r['id'] === id);
+      const record = storeState.records.find((r) => r[keyPath] === key);
       req.triggerSuccess(record ? { ...record } : undefined);
       return req;
     },
     put(value: StoredRecord) {
       const req = createFakeRequest<number | string>();
       const record = { ...value };
-      const id = record['id'];
+      const key = record[keyPath];
 
-      const index = storeState.records.findIndex((r) => r['id'] === id);
+      const index = storeState.records.findIndex((r) => r[keyPath] === key);
       if (index >= 0) {
         storeState.records[index] = record;
       } else {
         storeState.records.push(record);
       }
 
-      req.triggerSuccess(id as number | string);
+      req.triggerSuccess(key as number | string);
       return req;
     },
     getAll() {
@@ -157,6 +159,9 @@ function createFakeDatabase(dbName: string, version: number, dbState: DatabaseSt
       dbState.stores.set(storeName, storeState);
       return createFakeObjectStore(storeState);
     },
+    deleteObjectStore(storeName: string) {
+      dbState.stores.delete(storeName);
+    },
     transaction(_storeNames: string | string[], _mode?: IDBTransactionMode) {
       return createFakeTransaction(dbState);
     },
@@ -174,6 +179,8 @@ export function createInMemoryIndexedDB(): IDBFactory {
       const targetVersion = version ?? 1;
       let dbState = dbs.get(name);
       const isNew = !dbState;
+      const oldVersion = dbState ? dbState.version : 0;
+      const needsUpgrade = isNew || targetVersion > oldVersion;
 
       if (!dbState) {
         dbState = {
@@ -181,16 +188,24 @@ export function createInMemoryIndexedDB(): IDBFactory {
           stores: new Map(),
         };
         dbs.set(name, dbState);
+      } else if (targetVersion > dbState.version) {
+        dbState.version = targetVersion;
       }
 
       const req = createFakeRequest<unknown>() as FakeOpenRequest;
       req.onupgradeneeded = null;
+      req.transaction = null;
       const fakeDb = createFakeDatabase(name, targetVersion, dbState);
 
       queueMicrotask(() => {
         req.result = fakeDb;
-        if (isNew && req.onupgradeneeded) {
-          const event = new Event('upgradeneeded') as IDBVersionChangeEvent;
+        if (needsUpgrade && req.onupgradeneeded) {
+          const versionTx = createFakeTransaction(dbState) as unknown as IDBTransaction;
+          req.transaction = versionTx;
+          const event = Object.assign(new Event('upgradeneeded'), {
+            oldVersion,
+            newVersion: targetVersion,
+          }) as IDBVersionChangeEvent;
           req.onupgradeneeded(event);
         }
         req.triggerSuccess(fakeDb);

@@ -19,21 +19,21 @@ export default function Page({}: Route.ComponentProps) {
   const isValidGlyph = HIRAGANA_MAP.has(glyph);
 
   const [QuizComponent] = useState(() => getRandomQuizComponent());
-  const eventIdPromiseRef = useRef<Promise<number | null> | null>(null);
+  const eventTimestampPromiseRef = useRef<Promise<number | null> | null>(null);
 
   useEffect(() => {
     if (!isValidGlyph) {
       return;
     }
 
-    eventIdPromiseRef.current = appendQuizEvent(glyph).catch(() => null);
+    eventTimestampPromiseRef.current = appendQuizEvent(glyph).catch(() => null);
   }, [glyph, isValidGlyph]);
 
   const handleCorrect = () => {
-    eventIdPromiseRef.current
-      ?.then(async (id) => {
-        if (id !== null) {
-          await updateQuizEvent(id, 'correct');
+    eventTimestampPromiseRef.current
+      ?.then(async (timestamp) => {
+        if (timestamp !== null) {
+          await updateQuizEvent(timestamp, 'correct');
         }
       })
       .catch(() => {
@@ -42,10 +42,10 @@ export default function Page({}: Route.ComponentProps) {
   };
 
   const handleWrong = () => {
-    eventIdPromiseRef.current
-      ?.then(async (id) => {
-        if (id !== null) {
-          await updateQuizEvent(id, 'wrong');
+    eventTimestampPromiseRef.current
+      ?.then(async (timestamp) => {
+        if (timestamp !== null) {
+          await updateQuizEvent(timestamp, 'wrong');
         }
       })
       .catch(() => {
