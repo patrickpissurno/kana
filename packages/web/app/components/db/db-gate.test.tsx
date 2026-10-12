@@ -22,7 +22,8 @@ describe('DbGate', () => {
 
     const child = screen.getByText('Content Ready');
     expect(child).toBeInTheDocument();
-    expect(child.parentElement?.style.display).toBe('');
+    expect(child.parentElement).toHaveClass('flex', 'flex-1', 'flex-col');
+    expect(child.parentElement).not.toHaveClass('hidden');
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -42,7 +43,8 @@ describe('DbGate', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByText('Loading Kana...')).toBeInTheDocument();
     const child = screen.getByText('Content Loading');
-    expect(child.parentElement?.style.display).toBe('none');
+    expect(child.parentElement).toHaveClass('hidden', 'flex-1', 'flex-col');
+    expect(child.parentElement).not.toHaveClass('flex');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -61,7 +63,8 @@ describe('DbGate', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText('Critical DB failure')).toBeInTheDocument();
     const child = screen.getByText('Content Error');
-    expect(child.parentElement?.style.display).toBe('none');
+    expect(child.parentElement).toHaveClass('hidden', 'flex-1', 'flex-col');
+    expect(child.parentElement).not.toHaveClass('flex');
     expect(screen.queryByRole('status')).toBeNull();
   });
 });

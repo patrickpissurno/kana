@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cn } from 'cn';
 import { useInitDb } from '../../helpers/use-init-db';
 
 export function DbGate({ children }: { children: ReactNode }) {
@@ -31,7 +32,9 @@ export function DbGate({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <div style={isIndicatorVisible || error ? { display: 'none' } : undefined}>{children}</div>
+      <div className={cn('flex flex-1 flex-col', (isIndicatorVisible || error) && 'hidden')}>
+        {children}
+      </div>
     </>
   );
 }
