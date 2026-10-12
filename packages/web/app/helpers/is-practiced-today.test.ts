@@ -19,11 +19,13 @@ describe('isPracticedToday', () => {
     expect(isPracticedToday(events)).toBe(false);
   });
 
-  it('returns true when a correct or wrong attempt occurred today', () => {
-    const eventsCorrect: QuizEvent[] = [{ glyph: 'あ', timestamp: Date.now(), result: 'correct' }];
+  it('returns false when today events are only wrong', () => {
     const eventsWrong: QuizEvent[] = [{ glyph: 'あ', timestamp: Date.now(), result: 'wrong' }];
+    expect(isPracticedToday(eventsWrong)).toBe(false);
+  });
 
+  it('returns true when a correct attempt occurred today', () => {
+    const eventsCorrect: QuizEvent[] = [{ glyph: 'あ', timestamp: Date.now(), result: 'correct' }];
     expect(isPracticedToday(eventsCorrect)).toBe(true);
-    expect(isPracticedToday(eventsWrong)).toBe(true);
   });
 });
