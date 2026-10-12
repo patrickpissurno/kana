@@ -27,11 +27,22 @@ export function pwaManifestPlugin(): Plugin {
   return {
     name: 'pwa-manifest-hashed-icons',
     generateBundle(this: Rollup.PluginContext, _, bundle: Rollup.OutputBundle) {
-      const findAsset = (name: string, ext = '.png'): string => {
+      const findAsset = (name: string, ext = '.png', fallbackName?: string): string => {
         const key = Object.keys(bundle).find(
           (k) => k.includes(name) && k.endsWith(ext) && !k.endsWith('.map')
         );
-        return key ? `/${key}` : `/assets/${name}${ext}`;
+        if (key) {
+          return `/${key}`;
+        }
+        if (fallbackName) {
+          const fallbackKey = Object.keys(bundle).find(
+            (k) => k.includes(fallbackName) && k.endsWith(ext) && !k.endsWith('.map')
+          );
+          if (fallbackKey) {
+            return `/${fallbackKey}`;
+          }
+        }
+        return `/assets/${name}${ext}`;
       };
 
       const manifest: PwaManifest = {
@@ -59,13 +70,13 @@ export function pwaManifestPlugin(): Plugin {
             purpose: 'any',
           },
           {
-            src: findAsset('icon-maskable-192'),
+            src: findAsset('icon-maskable-192', '.png', 'icon-192'),
             sizes: '192x192',
             type: 'image/png',
             purpose: 'maskable',
           },
           {
-            src: findAsset('icon-maskable-512'),
+            src: findAsset('icon-maskable-512', '.png', 'icon-512'),
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

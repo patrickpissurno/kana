@@ -16,6 +16,14 @@ const EXCLUDE = [
 const ENV = process.env as Record<string, string>;
 
 export default defineConfig({
+  build: {
+    assetsInlineLimit: (filePath) => {
+      if (filePath.includes('assets/icons/')) {
+        return false;
+      }
+      return undefined;
+    },
+  },
   plugins: [
     tailwindcss(),
     ...(ENV['VITEST']
@@ -31,7 +39,7 @@ export default defineConfig({
             workbox: {
               globDirectory: 'build/client',
               globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
-              navigateFallback: '/index.html',
+              navigateFallback: null,
               cleanupOutdatedCaches: true,
               runtimeCaching: [
                 {
