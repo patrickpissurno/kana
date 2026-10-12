@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["**/*", "**/.server/**/*", "**/.client/**/*"],
+  "compilerOptions": {
+    // Environment setup & latest features
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["bun", "vite/client"],
+
+    "rootDirs": ["."],
+
+    "paths": {
+      "~/*": ["./app/*"],
+      "@/*": ["./*"]
+    }
+  }
+}

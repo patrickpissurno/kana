@@ -1,0 +1,29 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "bun run typecheck && bun run fmt && bun run lint",
+    "dev": "bun --hot ./app/index.server.ts",
+    "fmt": "bun run --bun oxfmt",
+    "lint": "bun run --bun oxlint",
+    "migrate": "bun run ./app/scripts/migrate.server.ts",
+    "start": "NODE_ENV=production bun run ./app/index.server.ts",
+    "test": "bun run --bun vitest run",
+    "typecheck": "bun run --bun tsc"
+  },
+  "dependencies": {
+    "date-fns": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
