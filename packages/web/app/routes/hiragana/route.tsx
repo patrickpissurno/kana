@@ -79,6 +79,7 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
 
 export default function Page({}: Route.ComponentProps) {
   const [sections, setSections] = useState<SectionState[]>(getInitialSections);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -113,9 +114,11 @@ export default function Page({}: Route.ComponentProps) {
         });
 
         setSections(updated);
+        setLoading(false);
       })
       .catch(() => {
         setSections(structuredClone(getSessionSections()));
+        setLoading(false);
       });
 
     return () => {
@@ -149,6 +152,7 @@ export default function Page({}: Route.ComponentProps) {
             title={section.title}
             description={section.description}
             entries={section.entries}
+            loading={loading}
           />
         ))}
       </div>

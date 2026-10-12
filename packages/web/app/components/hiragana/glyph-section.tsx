@@ -10,9 +10,10 @@ export type GlyphSectionProps = {
   title: string;
   description: string;
   entries: GlyphItem[];
+  loading: boolean;
 };
 
-export function GlyphSection({ title, description, entries }: GlyphSectionProps) {
+export function GlyphSection({ title, description, entries, loading }: GlyphSectionProps) {
   return (
     <section className="mb-8 w-full">
       <div className="mb-3 px-1">
@@ -26,6 +27,7 @@ export function GlyphSection({ title, description, entries }: GlyphSectionProps)
             glyph={entry.glyph}
             score={entry.score}
             isPracticedToday={entry.isPracticedToday}
+            loading={loading}
           />
         ))}
       </div>
