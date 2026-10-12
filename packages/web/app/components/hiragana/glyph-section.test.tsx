@@ -9,8 +9,8 @@ const SCORE_TEN = 10;
 describe('GlyphSection', () => {
   it('renders section title, description, and cards with loading prop', () => {
     const entries = [
-      { glyph: 'あ', score: SCORE_ZERO, isPracticedToday: false },
-      { glyph: 'い', score: SCORE_TEN, isPracticedToday: true },
+      { glyph: 'あ', score: SCORE_ZERO, isPracticedToday: false, cooldownActive: false },
+      { glyph: 'い', score: SCORE_TEN, isPracticedToday: true, cooldownActive: true },
     ];
 
     render(

@@ -10,7 +10,13 @@ describe('GlyphCard', () => {
   it('renders single character glyph with neutral border when unpracticed today and not loading', () => {
     render(
       <MemoryRouter>
-        <GlyphCard glyph="あ" score={SCORE_ZERO} isPracticedToday={false} loading={false} />
+        <GlyphCard
+          glyph="あ"
+          score={SCORE_ZERO}
+          isPracticedToday={false}
+          loading={false}
+          cooldownActive={false}
+        />
       </MemoryRouter>
     );
 
@@ -18,6 +24,7 @@ describe('GlyphCard', () => {
     expect(link).toHaveAttribute('href', '/quiz?glyph=%E3%81%82');
     expect(link).toHaveClass('border-border/60');
     expect(link).not.toHaveClass('ring-primary');
+    expect(link.querySelector('svg.lucide-clock')).not.toBeInTheDocument();
 
     const glyphSpan = screen.getByText('あ');
     expect(glyphSpan).toHaveClass('text-3xl');
@@ -27,7 +34,13 @@ describe('GlyphCard', () => {
   it('renders digraph glyph with colored border and opacity-0 when practiced today and loading', () => {
     render(
       <MemoryRouter>
-        <GlyphCard glyph="きゃ" score={SCORE_FIFTY} isPracticedToday={true} loading={true} />
+        <GlyphCard
+          glyph="きゃ"
+          score={SCORE_FIFTY}
+          isPracticedToday={true}
+          loading={true}
+          cooldownActive={true}
+        />
       </MemoryRouter>
     );
 
@@ -35,6 +48,7 @@ describe('GlyphCard', () => {
     expect(link).toHaveAttribute('href', '/quiz?glyph=%E3%81%8D%E3%82%83');
     expect(link).toHaveClass('border-primary');
     expect(link).toHaveClass('ring-primary');
+    expect(link.querySelector('svg.lucide-clock')).toBeInTheDocument();
 
     const glyphSpan = screen.getByText('きゃ');
     expect(glyphSpan).toHaveClass('text-2xl');

@@ -7,6 +7,7 @@ import type { Route } from './+types/route';
 import { GlyphSection } from '../../components/hiragana/glyph-section';
 import { HIRAGANA_SECTIONS } from '../../data/hiragana';
 import { calculateGlyphScore } from '../../helpers/calculate-glyph-score';
+import { isCooldownActive } from '../../helpers/is-cooldown-active';
 import { isPracticedToday } from '../../helpers/is-practiced-today';
 import { loadAllQuizEvents } from '../../helpers/load-all-quiz-events';
 import { shuffleArray } from '../../helpers/shuffle-array';
@@ -35,6 +36,7 @@ const CANONICAL_SECTIONS: SectionState[] = HIRAGANA_SECTIONS.map((section) => ({
     glyph: entry.glyph,
     score: INITIAL_SCORE,
     isPracticedToday: false,
+    cooldownActive: false,
   })),
 }));
 
@@ -47,6 +49,7 @@ function getSessionSections(): SectionState[] {
       glyph: entry.glyph,
       score: INITIAL_SCORE,
       isPracticedToday: false,
+      cooldownActive: false,
     }));
     return {
       id: section.id,
@@ -99,10 +102,12 @@ export default function Page({}: Route.ComponentProps) {
             const glyphEvents = eventsByGlyph.get(entry.glyph) ?? [];
             const score = calculateGlyphScore(glyphEvents);
             const practiced = isPracticedToday(glyphEvents);
+            const cooldown = isCooldownActive(glyphEvents);
             return {
               glyph: entry.glyph,
               score,
               isPracticedToday: practiced,
+              cooldownActive: cooldown,
             };
           });
 

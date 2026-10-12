@@ -4,6 +4,7 @@ export type GlyphItem = {
   glyph: string;
   score: number;
   isPracticedToday: boolean;
+  cooldownActive: boolean;
 };
 
 export type GlyphSectionProps = {
@@ -28,6 +29,7 @@ export function GlyphSection({ title, description, entries, loading }: GlyphSect
             score={entry.score}
             isPracticedToday={entry.isPracticedToday}
             loading={loading}
+            cooldownActive={entry.cooldownActive}
           />
         ))}
       </div>
