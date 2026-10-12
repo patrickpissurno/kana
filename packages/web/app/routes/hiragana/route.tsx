@@ -136,8 +136,9 @@ export default function Page({}: Route.ComponentProps) {
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-4 py-6 sm:py-10">
       <Link
         to="/"
-        className="text-muted-foreground hover:text-foreground mb-5 text-sm font-medium transition-colors"
+        className="text-muted-foreground hover:text-foreground mb-5 text-sm font-medium transition-colors select-none"
         aria-label="Home"
+        draggable={false}
       >
         <ArrowLeft className="size-5" />
       </Link>

@@ -23,7 +23,11 @@ export default function Page({}: Route.ComponentProps) {
         </div>
         <Link
           to="/hiragana"
-          className={cn(buttonVariants({ size: 'lg' }), 'w-full text-base font-semibold')}
+          className={cn(
+            buttonVariants({ size: 'lg' }),
+            'w-full text-base font-semibold select-none'
+          )}
+          draggable={false}
         >
           Practice Hiragana
         </Link>

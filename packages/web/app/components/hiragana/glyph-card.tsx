@@ -27,9 +27,10 @@ export function GlyphCard({
       to={`/quiz?glyph=${encodeURIComponent(glyph)}`}
       aria-label={`Practice ${glyph}`}
       className={cn(
-        'group flex flex-col items-center justify-between rounded-2xl bg-card p-3 shadow-xs transition-all active:scale-95 hover:bg-accent/40',
+        'group flex flex-col items-center justify-between rounded-2xl bg-card p-3 shadow-xs transition-all active:scale-95 hover:bg-accent/40 select-none',
         isPracticedToday ? 'border border-primary ring ring-primary' : 'border border-border/60'
       )}
+      draggable={false}
     >
       <div className="flex h-14 w-full items-center justify-center">
         <span

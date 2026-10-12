@@ -122,7 +122,11 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
           </div>
           <Link
             to="/hiragana"
-            className={cn(buttonVariants({ size: 'lg', variant: 'default' }), 'w-full mb-12')}
+            className={cn(
+              buttonVariants({ size: 'lg', variant: 'default' }),
+              'w-full mb-12 select-none'
+            )}
+            draggable={false}
           >
             Continue
           </Link>
@@ -146,9 +150,10 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg', variant: 'secondary' }),
-              'w-full',
+              'w-full select-none',
               isDontKnow ? 'mb-12' : 'mb-6'
             )}
+            draggable={false}
           >
             Continue
           </Link>
