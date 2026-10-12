@@ -10,7 +10,12 @@ describe('getDb', () => {
   it('opens kana_db and creates object store with indexes on upgrade', async () => {
     const db = await getDb();
     expect(db.name).toBe('kana_db');
+    expect(db.version).toBe(V2_VERSION);
     expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
+
+    const tx = db.transaction([STORE_NAME], 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    expect(store.keyPath).toBe('timestamp');
   });
 
   it('resolves successfully on subsequent calls without error', async () => {
@@ -18,7 +23,7 @@ describe('getDb', () => {
     expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
   });
 
-  it('migrates existing records from v1 to v2 stripping id', async () => {
+  it('migrates existing records from legacy store with keyPath id to keyPath timestamp', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     v1Req.onupgradeneeded = () => {
       const db = v1Req.result;
@@ -39,8 +44,9 @@ describe('getDb', () => {
 
     const tx = db.transaction([STORE_NAME], 'readonly');
     const store = tx.objectStore(STORE_NAME);
-    const getReq = store.get(TEST_TIMESTAMP);
+    expect(store.keyPath).toBe('timestamp');
 
+    const getReq = store.get(TEST_TIMESTAMP);
     const record = await new Promise<Record<string, unknown>>((resolve) => {
       getReq.onsuccess = () => resolve(getReq.result as Record<string, unknown>);
     });
@@ -53,18 +59,7 @@ describe('getDb', () => {
     expect(record['id']).toBeUndefined();
   });
 
-  it('creates store when upgrading from v1 if store did not previously exist', async () => {
-    const v1Req = indexedDB.open('kana_db', V1_VERSION);
-    await new Promise<void>((resolve) => {
-      v1Req.onsuccess = () => resolve();
-    });
-
-    const db = await getDb();
-    expect(db.version).toBe(V2_VERSION);
-    expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
-  });
-
-  it('rejects when indexedDB.open encounters an error with DOMException', async () => {
+  it('rejects when openDatabase encounters an error with DOMException', async () => {
     const originalOpen = indexedDB.open;
     const testError = new DOMException('Failed to open', 'UnknownError');
 
@@ -89,7 +84,7 @@ describe('getDb', () => {
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when indexedDB.open encounters an error without DOMException', async () => {
+  it('rejects when openDatabase encounters an error without DOMException', async () => {
     const originalOpen = indexedDB.open;
 
     vi.spyOn(indexedDB, 'open').mockImplementation(() => {
@@ -111,6 +106,182 @@ describe('getDb', () => {
 
     await expect(getDb()).rejects.toThrow('Database open failed');
     indexedDB.open = originalOpen;
+  });
+
+  it('rejects when readAllLegacyRecords encounters an error with DOMException', async () => {
+    const originalOpen = indexedDB.open;
+    const testError = new DOMException('Read failed', 'AbortError');
+
+    vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+      const fakeStore = {
+        keyPath: 'id',
+        getAll: () => {
+          const req = {
+            result: undefined,
+            error: testError,
+            onsuccess: null,
+            onerror: null,
+          } as unknown as IDBRequest;
+
+          queueMicrotask(() => {
+            if (req.onerror) {
+              req.onerror(new Event('error'));
+            }
+          });
+          return req;
+        },
+      };
+
+      const fakeDb = {
+        name: 'kana_db',
+        version: V2_VERSION,
+        objectStoreNames: {
+          contains: (name: string) => name === STORE_NAME,
+        },
+        transaction: () => ({
+          objectStore: () => fakeStore,
+        }),
+        close: vi.fn(),
+      };
+
+      const req = {
+        result: fakeDb,
+        error: null,
+        onsuccess: null,
+        onerror: null,
+        onupgradeneeded: null,
+      } as unknown as IDBOpenDBRequest;
+
+      queueMicrotask(() => {
+        if (req.onsuccess) {
+          req.onsuccess(new Event('success'));
+        }
+      });
+      return req;
+    });
+
+    await expect(getDb()).rejects.toThrow('Read failed');
+    indexedDB.open = originalOpen;
+  });
+
+  it('rejects when readAllLegacyRecords encounters an error without DOMException', async () => {
+    const originalOpen = indexedDB.open;
+
+    vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+      const fakeStore = {
+        keyPath: 'id',
+        getAll: () => {
+          const req = {
+            result: undefined,
+            error: null,
+            onsuccess: null,
+            onerror: null,
+          } as unknown as IDBRequest;
+
+          queueMicrotask(() => {
+            if (req.onerror) {
+              req.onerror(new Event('error'));
+            }
+          });
+          return req;
+        },
+      };
+
+      const fakeDb = {
+        name: 'kana_db',
+        version: V2_VERSION,
+        objectStoreNames: {
+          contains: (name: string) => name === STORE_NAME,
+        },
+        transaction: () => ({
+          objectStore: () => fakeStore,
+        }),
+        close: vi.fn(),
+      };
+
+      const req = {
+        result: fakeDb,
+        error: null,
+        onsuccess: null,
+        onerror: null,
+        onupgradeneeded: null,
+      } as unknown as IDBOpenDBRequest;
+
+      queueMicrotask(() => {
+        if (req.onsuccess) {
+          req.onsuccess(new Event('success'));
+        }
+      });
+      return req;
+    });
+
+    await expect(getDb()).rejects.toThrow('Failed to read legacy records');
+    indexedDB.open = originalOpen;
+  });
+
+  it('rejects when deleteDatabaseAsync encounters an error with DOMException', async () => {
+    const v1Req = indexedDB.open('kana_db', V1_VERSION);
+    v1Req.onupgradeneeded = () => {
+      const db = v1Req.result;
+      db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+    };
+    await new Promise<void>((resolve) => {
+      v1Req.onsuccess = () => resolve();
+    });
+
+    const originalDelete = indexedDB.deleteDatabase;
+    const testError = new DOMException('Delete failed', 'AbortError');
+
+    vi.spyOn(indexedDB, 'deleteDatabase').mockImplementation(() => {
+      const req = {
+        result: undefined,
+        error: testError,
+        onsuccess: null,
+        onerror: null,
+      } as unknown as IDBOpenDBRequest;
+
+      queueMicrotask(() => {
+        if (req.onerror) {
+          req.onerror(new Event('error'));
+        }
+      });
+      return req;
+    });
+
+    await expect(getDb()).rejects.toThrow('Delete failed');
+    indexedDB.deleteDatabase = originalDelete;
+  });
+
+  it('rejects when deleteDatabaseAsync encounters an error without DOMException', async () => {
+    const v1Req = indexedDB.open('kana_db', V1_VERSION);
+    v1Req.onupgradeneeded = () => {
+      const db = v1Req.result;
+      db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+    };
+    await new Promise<void>((resolve) => {
+      v1Req.onsuccess = () => resolve();
+    });
+
+    const originalDelete = indexedDB.deleteDatabase;
+
+    vi.spyOn(indexedDB, 'deleteDatabase').mockImplementation(() => {
+      const req = {
+        result: undefined,
+        error: null,
+        onsuccess: null,
+        onerror: null,
+      } as unknown as IDBOpenDBRequest;
+
+      queueMicrotask(() => {
+        if (req.onerror) {
+          req.onerror(new Event('error'));
+        }
+      });
+      return req;
+    });
+
+    await expect(getDb()).rejects.toThrow('Failed to delete legacy database');
+    indexedDB.deleteDatabase = originalDelete;
   });
 
   it('exports correct index and store constants', () => {

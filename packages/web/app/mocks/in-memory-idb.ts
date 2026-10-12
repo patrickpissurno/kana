@@ -70,6 +70,7 @@ function createFakeIndex(storeState: StoreState, keyPath: string) {
 function createFakeObjectStore(storeState: StoreState) {
   const keyPath = storeState.keyPath ?? 'id';
   return {
+    keyPath: storeState.keyPath,
     createIndex(name: string, indexKeyPath: string) {
       storeState.indices.set(name, indexKeyPath);
       return createFakeIndex(storeState, indexKeyPath);

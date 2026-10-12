@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -9,6 +9,7 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
+import { getDb } from './helpers/get-db';
 import { useDynamicOverscroll } from './helpers/use-dynamic-overscroll';
 import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
@@ -59,6 +60,12 @@ export default function App() {
   const activationKey = useWindowReactivation();
   useDynamicOverscroll();
   const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
+
+  useEffect(() => {
+    getDb().catch(() => {
+      // Handled gracefully
+    });
+  }, []);
 
   return <Outlet context={outletContext} />;
 }
