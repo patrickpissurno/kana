@@ -47,6 +47,7 @@
   "module": "index.ts",
   "scripts": {
     "agy": "./scripts/agy.sh",
+    "db:dump": "PGSSLMODE=prefer pg_dump -s kana | grep -vE '^(--|$|SET |ALTER .* OWNER TO |SELECT |\\\\restrict)' > database.dump",
     "fmt": "bun run --bun oxfmt",
     "lint": "bun run --bun oxlint",
     "precommit": "bun run --bun lint-staged",

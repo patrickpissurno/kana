@@ -1,6 +1,7 @@
 ## Workspace:
 - root: ./ (monorepo) 
 - web: ./packages/web -> main app
+- backend: ./packages/backend -> main app
 
 ## Stack:
 - bun 1.4.2
@@ -17,6 +18,7 @@ This is an SPA. SSR is disabled.
 
 ## Rules:
 1. Be concise
+2. Never RUN migrations
 3. Not allowed to add dependencies
 4. Do NOT make assumptions, when in doubt ASK instead
 5. Always begin by interviewing for more context, as necessary
@@ -26,8 +28,10 @@ This is an SPA. SSR is disabled.
 9. Avoid test cases that don't contribute to coverage
 10. ALWAYS use uncontrolled elements for forms
 
-## Testing Methodology:
-Goal is to exercise React components. Tests should be isolated by component (one file per component) and parent components should focus on integration (e.g. view transitions).
+## Testing 3-Pillar Methodology:
+1. **DB Queries (`.db.test.ts`)**: Goal is to verify SQL queries and constraints using a real, seeded database (no mocks). Since these are expensive, only include tests that directly contribute to DB coverage. Move logic-only tests to `.server.test.ts`.
+2. **Server Logic (`.server.test.ts`)**: Goal is to exercise request handler logic and other validations outside of queries. The DB is fully mocked.
+3. **Client UI (`.test.tsx`)**: Goal is to exercise React components. Loaders and actions are mocked. Tests should be isolated by component (one file per component) and parent components should focus on integration (e.g. view transitions).
 
 ## Commands:
 - `bun --filter web test <filename>.test.{ts,tsx}` (run test in isolation)
@@ -35,10 +39,17 @@ Goal is to exercise React components. Tests should be isolated by component (one
 - `bun --filter web test` (run all tests - only use when all else has passed)
 - `bun shadcn add <component>`
 
+When working on the backend, the commands are:
+- `bun --filter backend test <filename>.test.{ts,tsx}`
+- `bun --filter backend check`
+- `bun --filter backend test`
+- `bun run db:dump`
+
 Gotchas:
 - Never run just `bun test`, as it will try to use the bun test runner instead of vitest
 
 ## Architecture & Quirks:
+- **Database Schema Truth:** The `database.dump` file represents the DB schema. If you suspect it might be outdated, run `bun run db:dump` to refresh it locally rather than relying on live DB queries for inspection. It's good practice to run it once per session if you're doing any DB sensitive work
 - **Linting & Disables:** NEVER use a full `eslint-disable`. Do not disable rules (even single lines) unless absolutely necessary, and if you feel the need to do so, you MUST pause and ask the user for permission with justification first. Always attempt to "do it properly" (e.g., using semantic constants for magic numbers/strings in test files).
 - **Precommit Checks (`lint-staged`):** Prefer `bun --filter web check` over `bun precommit`
 - **TypeScript in Tests:** Avoid using `as any`. For component props, import `Route` from `./+types/route` and use safe casts like `as unknown as Route.ComponentProps['loaderData']`. To prevent `strict-void-return` errors when mocking functions, provide explicit type parameters (e.g. `vi.fn<() => void>()` instead of just `vi.fn()`).
