@@ -13,6 +13,7 @@
 - date-fns 4
 - zod 4
 - shadcn ui
+- postgres 18
 
 This is an SPA. SSR is disabled.
 
