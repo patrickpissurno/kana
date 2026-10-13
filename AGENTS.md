@@ -35,7 +35,7 @@ This is an SPA. SSR is disabled.
 2. **Server Logic (`.server.test.ts`)**: Goal is to exercise request handler logic and other validations outside of queries. The DB is fully mocked.
 3. **Client UI (`.test.tsx`)**: Goal is to exercise React components. Loaders and actions are mocked. Tests should be isolated by component (one file per component) and parent components should focus on integration (e.g. view transitions).
 
-No unnecessary mocks. Files to reference for BE tests: `helpers/auth/login.server.test.ts`, `helpers/auth/login.server.db.test.ts`, `helpers/config.server.test.ts`, `helpers/auth/cookie.server.test.ts`
+No unnecessary mocks. Files to reference for BE tests: `helpers/auth/login.server.test.ts`, `helpers/auth/login.server.db.test.ts`, `helpers/config.server.test.ts`, `helpers/auth/cookie.server.test.ts`, `app/routes/auth/route.server.test.ts`
 
 ## Commands:
 - `bun --filter web test <filename>.test.{ts,tsx}` (run test in isolation)
