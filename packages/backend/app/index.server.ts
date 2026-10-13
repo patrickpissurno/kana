@@ -1,10 +1,13 @@
 import { serve } from 'bun';
+import { healthRoutes } from './routes/health/route.server';
 
 const IS_DEV = import.meta.env.NODE_ENV !== 'production';
 
 const server = serve({
   development: IS_DEV,
-  routes: {},
+  routes: {
+    ...healthRoutes,
+  },
 });
 
 // oxlint-disable-next-line no-console

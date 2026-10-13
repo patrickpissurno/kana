@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "check": "bun run typecheck && bun run fmt && bun run lint",
-    "dev": "bun --hot ./app/index.server.ts",
+    "dev": "BUN_PORT=3001 bun --hot ./app/index.server.ts",
     "fmt": "bun run --bun oxfmt",
     "lint": "bun run --bun oxlint",
     "migrate": "bun run ./app/scripts/migrate.server.ts",
-    "start": "NODE_ENV=production bun run ./app/index.server.ts",
+    "start": "NODE_ENV=production BUN_PORT=3001 bun run ./app/index.server.ts",
     "test": "bun run --bun vitest run",
     "typecheck": "bun run --bun tsc"
   },
