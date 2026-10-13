@@ -2,8 +2,43 @@ import type { SQL } from 'bun';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runMigrations } from './migrate.server';
+
+const { originalLog, originalError, consoleError } = vi.hoisted(() => {
+  const _originalLog = console.log;
+  const _originalError = console.error;
+  const log = vi.fn();
+  const error = vi.fn(_originalError);
+
+  Object.defineProperty(console, 'log', {
+    value: log,
+  });
+  Object.defineProperty(console, 'error', {
+    value: error,
+  });
+
+  return {
+    originalLog: _originalLog,
+    originalError: _originalError,
+    consoleLog: log,
+    consoleError: error,
+  };
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  consoleError.mockImplementation(originalError);
+});
+
+afterAll(() => {
+  Object.defineProperty(console, 'log', {
+    value: originalLog,
+  });
+  Object.defineProperty(console, 'error', {
+    value: originalError,
+  });
+});
 
 type QueryRecord = {
   readonly strings: readonly string[];
@@ -332,6 +367,8 @@ describe('runMigrations', () => {
   });
 
   it('handles non-concurrent migration failure by rolling back and logging error', async () => {
+    consoleError.mockImplementation(() => undefined);
+
     const content = 'CREATE TABLE failure_test (id INT);';
     mockFiles(['1.sql']);
     vi.mocked(readFile).mockResolvedValue(content);
@@ -343,6 +380,7 @@ describe('runMigrations', () => {
 
     await expect(runMigrations(mockSql)).rejects.toThrow('Transaction execution failed');
     expect(instance.close).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalled();
   });
 
   it('executes via direct CLI invocation check when script path matches process.argv[1]', async () => {
