@@ -369,6 +369,7 @@ export default defineConfig({
       files: ['**/*.test.{ts,tsx}'],
       rules: {
         'typescript/unbound-method': 'off',
+        'typescript/no-non-null-assertion': 'off',
       },
     },
     {

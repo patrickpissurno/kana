@@ -1,5 +1,3 @@
-// oxlint-disable typescript/no-non-null-assertion
-
 import { randomUUIDv7 } from 'bun';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 import type { AuthResult } from '~/helpers/auth/register.server';

@@ -17,7 +17,6 @@ function mockDbResult<T>(result: T[]) {
   return Object.assign(result, { value: [], columns: [] });
 }
 
-// oxlint-disable-next-line typescript/no-non-null-assertion
 const defaultMockDbImpl = mockDb.getMockImplementation()!;
 
 beforeEach(() => {
