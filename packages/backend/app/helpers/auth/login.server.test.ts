@@ -18,11 +18,11 @@ function mockDbResult<T>(result: T[]) {
 }
 
 // oxlint-disable-next-line typescript/no-non-null-assertion
-const defaultMockDbImplementation = mockDb.getMockImplementation()!;
+const defaultMockDbImpl = mockDb.getMockImplementation()!;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockDb.mockReset().mockImplementation(defaultMockDbImplementation);
+  mockDb.mockReset().mockImplementation(defaultMockDbImpl);
 });
 
 describe('login.server', () => {
