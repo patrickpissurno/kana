@@ -343,6 +343,7 @@ export default defineConfig({
       rules: {
         'import/no-nodejs-modules': 'off',
         'eslint/no-restricted-imports': 'off',
+        'typescript/only-throw-error': ['error', { allow: ['Response'] }],
       },
     },
     {

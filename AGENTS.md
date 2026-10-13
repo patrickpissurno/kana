@@ -12,6 +12,7 @@
 - typescript 7
 - date-fns 4
 - zod 4
+- @rvf/react-router (successor to remix-validated-form)
 - shadcn ui
 - postgres 18
 

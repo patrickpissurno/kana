@@ -1,4 +1,4 @@
-import { defineRoutes } from '../../helpers/define-routes';
+import { defineRoutes } from '~/helpers/define-routes.server';
 
 export const healthRoutes = defineRoutes({
   '/health': {

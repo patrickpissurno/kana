@@ -14,6 +14,7 @@
     "typecheck": "bun run --bun tsc"
   },
   "dependencies": {
+    "@rvf/react-router": "catalog:",
     "date-fns": "catalog:",
     "zod": "catalog:"
   },
