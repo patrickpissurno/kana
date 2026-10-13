@@ -23,18 +23,18 @@ type MockSqlInstance = {
 
 type MockPostgresErrorConstructor = new (
   message: string,
-  options: { code: string }
-) => Error & { code: string };
+  options: { errno: string }
+) => Error & { errno: string };
 
 const { MockPostgresError, defaultCliSql } = vi.hoisted(() => {
   function PostgresError(
-    this: Error & { code: string },
+    this: Error & { errno: string },
     message: string,
-    options: { code: string }
+    options: { errno: string }
   ) {
     this.name = 'PostgresError';
     this.message = message;
-    this.code = options.code;
+    this.errno = options.errno;
   }
   Object.setPrototypeOf(PostgresError.prototype, Error.prototype);
 
@@ -111,7 +111,7 @@ function mockFiles(files: string[]): void {
 
 function createConfiguredMockSql(options?: {
   historyRows?: { id: number; hash: string }[];
-  historyError?: Error & { code?: string };
+  historyError?: Error & { errno?: string };
   failBegin?: boolean;
 }): { mockSql: SQL; instance: MockSqlInstance } {
   const queries: QueryRecord[] = [];
@@ -203,7 +203,7 @@ describe('runMigrations', () => {
     vi.mocked(readFile).mockResolvedValue(content);
 
     const postgresError = new MockPostgresError('Table does not exist', {
-      code: ERROR_TABLE_NOT_FOUND,
+      errno: ERROR_TABLE_NOT_FOUND,
     });
     const { mockSql, instance } = createConfiguredMockSql({
       historyError: postgresError,
@@ -221,7 +221,7 @@ describe('runMigrations', () => {
     vi.mocked(readFile).mockResolvedValue(content);
 
     const schemaError = Object.assign(new Error('Schema missing'), {
-      code: ERROR_SCHEMA_NOT_FOUND,
+      errno: ERROR_SCHEMA_NOT_FOUND,
     });
     const { mockSql, instance } = createConfiguredMockSql({
       historyError: schemaError,

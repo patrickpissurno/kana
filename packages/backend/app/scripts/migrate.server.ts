@@ -74,9 +74,10 @@ export async function runMigrations(sql: SQL): Promise<void> {
       }
     } catch (error) {
       if (
-        (error instanceof SQL.PostgresError ||
-          (typeof error === 'object' && error !== null && 'code' in error)) &&
-        (error.code === ERR_UNDEFINED_TABLE || error.code === ERR_INVALID_SCHEMA_NAME)
+        typeof error === 'object' &&
+        error !== null &&
+        'errno' in error &&
+        (error.errno === ERR_UNDEFINED_TABLE || error.errno === ERR_INVALID_SCHEMA_NAME)
       ) {
         console.log('Migration history table not found. Assuming fresh database.');
       } else {
