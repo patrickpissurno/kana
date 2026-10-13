@@ -25,7 +25,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          include: ['./app/**/*.server.test.{ts,tsx}'],
+          include: ['./app/**/*.server.test.{ts,tsx}', './app/**/*.server.db.test.{ts,tsx}'],
           exclude: [...EXCLUDE],
           name: 'node',
           environment: 'node',
