@@ -26,5 +26,9 @@ describe('Index Route', () => {
     const link = screen.getByRole('link', { name: /practice hiragana/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/hiragana');
+
+    const profileLink = screen.getByRole('link', { name: /profile/i });
+    expect(profileLink).toBeInTheDocument();
+    expect(profileLink).toHaveAttribute('href', '/profile');
   });
 });

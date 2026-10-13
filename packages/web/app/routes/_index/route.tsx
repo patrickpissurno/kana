@@ -1,4 +1,5 @@
 import { cn } from 'cn';
+import { User } from 'lucide-react';
 import { Link } from 'react-router';
 import type { Route } from './+types/route';
 import { InstallBanner } from '../../components/pwa/install-banner';
@@ -14,6 +15,17 @@ export function meta({}: Route.MetaArgs) {
 export default function Page({}: Route.ComponentProps) {
   return (
     <>
+      <Link
+        to="/profile"
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'text-muted-foreground hover:text-foreground absolute top-4 right-4 sm:top-6 sm:right-6 select-none'
+        )}
+        aria-label="Profile"
+        draggable={false}
+      >
+        <User className="size-5" />
+      </Link>
       <main className="flex flex-1 flex-col items-center justify-center p-6 text-center">
         <div className="flex max-w-sm flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
