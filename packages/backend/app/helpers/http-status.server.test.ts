@@ -1,0 +1,27 @@
+import { describe, expect, it } from 'vitest';
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_NO_CONTENT,
+  HTTP_OK,
+  HTTP_UNSUPPORTED_MEDIA_TYPE,
+} from './http-status.server';
+
+const EXPECTED_STATUS_OK = 200;
+const EXPECTED_STATUS_CREATED = 201;
+const EXPECTED_STATUS_NO_CONTENT = 204;
+const EXPECTED_STATUS_BAD_REQUEST = 400;
+const EXPECTED_STATUS_FORBIDDEN = 403;
+const EXPECTED_STATUS_UNSUPPORTED_MEDIA_TYPE = 415;
+
+describe('http-status.server', () => {
+  it('exports expected status codes', () => {
+    expect(HTTP_OK).toBe(EXPECTED_STATUS_OK);
+    expect(HTTP_CREATED).toBe(EXPECTED_STATUS_CREATED);
+    expect(HTTP_NO_CONTENT).toBe(EXPECTED_STATUS_NO_CONTENT);
+    expect(HTTP_BAD_REQUEST).toBe(EXPECTED_STATUS_BAD_REQUEST);
+    expect(HTTP_FORBIDDEN).toBe(EXPECTED_STATUS_FORBIDDEN);
+    expect(HTTP_UNSUPPORTED_MEDIA_TYPE).toBe(EXPECTED_STATUS_UNSUPPORTED_MEDIA_TYPE);
+  });
+});
