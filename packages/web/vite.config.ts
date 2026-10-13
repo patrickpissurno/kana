@@ -69,6 +69,7 @@ export default defineConfig({
         statements: 100,
         perFile: true,
       },
+      include: ['app/**/*.{ts,tsx}'],
       exclude: EXCLUDE,
     },
     projects: [
