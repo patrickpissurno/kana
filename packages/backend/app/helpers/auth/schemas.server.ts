@@ -16,22 +16,22 @@ const REGEX_NUMBER = /[0-9]/;
 const REGEX_SPECIAL = /[^a-zA-Z0-9]/;
 
 export const registerSchema = z.object({
-  email: z.string().trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
+  email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
   password: z
-    .string()
+    .string(PASSWORD_ERROR_MESSAGE)
     .trim()
     .min(MIN_PASSWORD_LENGTH, PASSWORD_ERROR_MESSAGE)
     .regex(REGEX_LOWERCASE, PASSWORD_ERROR_MESSAGE)
     .regex(REGEX_UPPERCASE, PASSWORD_ERROR_MESSAGE)
     .regex(REGEX_NUMBER, PASSWORD_ERROR_MESSAGE)
     .regex(REGEX_SPECIAL, PASSWORD_ERROR_MESSAGE),
-  name: z.string().trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
+  name: z.string(NAME_ERROR_MESSAGE).trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
 });
 
 export const loginSchema = z
   .object({
-    email: z.string().trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
-    password: z.string().trim().min(1, PASSWORD_EMPTY_ERROR_MESSAGE),
+    email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
+    password: z.string(PASSWORD_EMPTY_ERROR_MESSAGE).trim().min(1, PASSWORD_EMPTY_ERROR_MESSAGE),
   })
   .or(
     z.object({
