@@ -19,13 +19,14 @@ export default defineConfig({
         statements: 100,
         perFile: true,
       },
+      include: ['app/**/*.{ts,tsx}'],
       exclude: EXCLUDE,
     },
     projects: [
       {
         extends: true,
         test: {
-          include: ['./app/**/*.server.test.{ts,tsx}', './app/**/*.server.db.test.{ts,tsx}'],
+          include: ['./app/**/*.test.{ts,tsx}'],
           exclude: [...EXCLUDE],
           name: 'node',
           environment: 'node',

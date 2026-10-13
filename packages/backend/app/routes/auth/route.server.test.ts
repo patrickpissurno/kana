@@ -109,4 +109,85 @@ describe('authRoutes', () => {
       expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);
     });
   });
+
+  describe('POST /auth/login', () => {
+    const { POST } = authRoutes['/auth/login'];
+
+    const validForm = new FormData();
+    validForm.append('email', 'test@example.com');
+    validForm.append('password', 'Password1!');
+
+    test('validation works and returns errors on failure', async () => {
+      const invalidForm = new FormData();
+      invalidForm.append('email', 'invalid-email');
+      invalidForm.append('password', 'Password1!');
+
+      const req = makeBunRequest('http://localhost/auth/login', {
+        method: 'POST',
+        body: invalidForm,
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+
+      expect(res.status).toBe(HTTP_BAD_REQUEST);
+      expect(await res.json()).toMatchObject({
+        error: {
+          fieldErrors: {
+            email: 'Please enter a valid email address',
+          },
+        },
+      });
+    });
+
+    it('it forwards login() errors on failure', async () => {
+      const result = {
+        data: undefined,
+        error: { nonFieldError: 'Invalid email or password' },
+      } satisfies AuthResult;
+
+      mockLogin.mockImplementation(async () => Promise.resolve(result));
+
+      const req = makeBunRequest('http://localhost/auth/login', {
+        method: 'POST',
+        body: validForm,
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+
+      expect(res.status).toBe(HTTP_BAD_REQUEST);
+      expect(await res.json()).toMatchObject({ error: result.error });
+    });
+
+    test('happy path works', async () => {
+      const result = {
+        data: {
+          user: { id: randomUUIDv7(), email: 'test@example.com', name: 'Test' },
+          token: 'token',
+          expires_at: new Date().toISOString(),
+        },
+        error: undefined,
+      } satisfies AuthResult;
+
+      mockLogin.mockImplementation(async () => Promise.resolve(result));
+
+      const req = makeBunRequest('http://localhost/auth/login', {
+        method: 'POST',
+        body: validForm,
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+
+      expect(res.status).toBe(HTTP_CREATED);
+      expect(await res.json()).toMatchObject({
+        email: result.data.user.email,
+        name: result.data.user.name,
+        expires_at: result.data.expires_at,
+      });
+      expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
+      expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);
+    });
+  });
 });
