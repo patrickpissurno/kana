@@ -8,7 +8,13 @@ import {
   SESSION_TTL_SECONDS,
   VITE_SESSION_COOKIE_DATA_NAME,
 } from '../config.server';
-import { attachSessionCookie, createSessionCookie, getSessionCookie } from './cookie.server';
+import {
+  attachSessionCookie,
+  createExpiredSessionCookie,
+  createSessionCookie,
+  deleteSessionCookie,
+  getSessionCookie,
+} from './cookie.server';
 
 const MOCK_USER: User = {
   email: 'test@example.com',
@@ -78,6 +84,47 @@ describe('cookie.server', () => {
       expect(setCookie).toContain(
         `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(VALID_SESSION_DATA.user))}`
       );
+    });
+  });
+
+  describe('createExpiredSessionCookie', () => {
+    it('creates session and session data cookies with maxAge 0 and empty values', () => {
+      const [sessionCookie, sessionDataCookie] = createExpiredSessionCookie();
+
+      expect(sessionCookie.name).toBe(SESSION_COOKIE_NAME);
+      expect(sessionCookie.value).toBe('');
+      expect(sessionCookie.maxAge).toBe(0);
+      expect(sessionCookie.httpOnly).toBe(true);
+      expect(sessionCookie.secure).toBe(true);
+      expect(sessionCookie.sameSite).toBe('lax');
+      expect(sessionCookie.domain).toBe(SESSION_COOKIE_DOMAIN);
+
+      expect(sessionDataCookie.name).toBe(VITE_SESSION_COOKIE_DATA_NAME);
+      expect(sessionDataCookie.value).toBe('');
+      expect(sessionDataCookie.maxAge).toBe(0);
+      expect(sessionDataCookie.httpOnly).toBe(false);
+      expect(sessionDataCookie.secure).toBe(true);
+      expect(sessionDataCookie.sameSite).toBe('lax');
+      expect(sessionDataCookie.domain).toBe(SESSION_COOKIE_DOMAIN);
+    });
+  });
+
+  describe('deleteSessionCookie', () => {
+    it('clears cookies on req and appends expired Set-Cookie headers on response', () => {
+      const req = makeBunRequest('http://localhost:3001/auth/logout');
+      req.cookies.set(SESSION_COOKIE_NAME, 'active-token');
+      req.cookies.set(VITE_SESSION_COOKIE_DATA_NAME, JSON.stringify(MOCK_USER));
+      const res = Response.json({ data: { success: true } });
+
+      const updatedResponse = deleteSessionCookie(req, res);
+
+      expect(req.cookies.get(SESSION_COOKIE_NAME)).toBeNull();
+      expect(req.cookies.get(VITE_SESSION_COOKIE_DATA_NAME)).toBeNull();
+
+      const setCookie = updatedResponse.headers.get('Set-Cookie');
+      expect(setCookie).toContain(`${SESSION_COOKIE_NAME}=`);
+      expect(setCookie).toContain('Max-Age=0');
+      expect(setCookie).toContain(`${VITE_SESSION_COOKIE_DATA_NAME}=`);
     });
   });
 });

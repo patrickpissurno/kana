@@ -1,7 +1,8 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import { cn } from 'cn';
 import { ArrowLeft, Loader2, User as UserIcon } from 'lucide-react';
-import { Link } from 'react-router';
+import { Form, Link, useActionData, useNavigation } from 'react-router';
+import { logout } from '~/endpoints/auth/logout';
 import type { Route } from './+types/route';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Button, buttonVariants } from '../../components/ui/button';
@@ -20,6 +21,10 @@ export type ProfileLoaderData = {
 
 export function clientLoader(): ProfileLoaderData {
   return { user: getStoredUser() };
+}
+
+export async function clientAction({}: Route.ClientActionArgs) {
+  return logout();
 }
 
 export function HydrateFallback({}: Route.HydrateFallbackProps) {
@@ -45,6 +50,10 @@ export function getInitials(name: string): string {
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
+  const actionData = useActionData<typeof clientAction>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === 'submitting';
+  const nonFieldError = actionData?.nonFieldError;
   const user = loaderData.user;
 
   return (
@@ -57,6 +66,15 @@ export default function Page({ loaderData }: Route.ComponentProps) {
       >
         <ArrowLeft className="size-5" />
       </Link>
+
+      {nonFieldError && (
+        <div
+          role="alert"
+          className="border-destructive/30 bg-destructive/10 text-destructive mb-6 w-full rounded-2xl border p-3 text-center text-sm font-medium"
+        >
+          {nonFieldError}
+        </div>
+      )}
 
       <div className="flex w-full flex-col items-center gap-6 pt-4">
         {user ? (
@@ -72,16 +90,21 @@ export default function Page({ loaderData }: Route.ComponentProps) {
               <p className="text-muted-foreground text-xs">Last sync: Sep 13th, 2026 14:20:00</p>
             </div>
 
-            <div className="w-full pt-2">
+            <Form method="post" className="w-full pt-2">
               <Button
                 variant="outline"
                 size="lg"
                 className="w-full text-base font-semibold select-none"
-                type="button"
+                type="submit"
+                disabled={isSubmitting}
               >
-                Sign out
+                {isSubmitting ? (
+                  <Loader2 className="size-5 animate-spin" aria-label="Signing out..." />
+                ) : (
+                  'Sign out'
+                )}
               </Button>
-            </div>
+            </Form>
           </>
         ) : (
           <>

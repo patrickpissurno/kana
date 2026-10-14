@@ -1,120 +1,181 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { createMemoryRouter, RouterProvider } from 'react-router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { logout } from '~/endpoints/auth/logout';
 import type { Route } from './+types/route';
 import { VITE_SESSION_COOKIE_DATA_NAME } from '../../helpers/config';
-import Page, { clientLoader, getInitials, HydrateFallback, meta } from './route';
+import { mockActionArgs } from '../../mocks/react-router/action';
+import Page, { clientAction, clientLoader, getInitials, HydrateFallback, meta } from './route';
 
 const EXPECTED_META_COUNT = 2;
 
+let mockActionData: unknown = null;
+let mockNavigationState: 'idle' | 'submitting' | 'loading' = 'idle';
+
+vi.mock('react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router')>();
+  return {
+    ...actual,
+    useActionData: () => mockActionData,
+    useNavigation: () => ({
+      state: mockNavigationState,
+      location: undefined,
+      formMethod: undefined,
+      formAction: undefined,
+      formEncType: undefined,
+      formData: undefined,
+      json: undefined,
+      text: undefined,
+    }),
+  };
+});
+
+vi.mock('~/endpoints/auth/logout', () => ({
+  logout: vi.fn(),
+}));
+
 describe('Profile Route', () => {
-  it('returns expected meta tags', () => {
-    const tags = meta({} as unknown as Route.MetaArgs);
-    expect(tags).toHaveLength(EXPECTED_META_COUNT);
-    expect(tags[0]).toEqual({ title: 'Profile - Kana' });
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockActionData = null;
+    mockNavigationState = 'idle';
   });
 
-  it('provides default loader data with null user when storage is empty', () => {
-    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    const data = clientLoader();
-    expect(data).toEqual({ user: null });
-  });
-
-  it('provides loader data with user when stored in cookie', () => {
-    const mockUser = {
-      name: 'Ken',
-      email: 'ken@example.com',
-    };
-    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(mockUser))}; Path=/`;
-    const data = clientLoader();
-    expect(data).toEqual({ user: mockUser });
-    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-  });
-
-  it('renders HydrateFallback with loading spinner', () => {
-    render(<HydrateFallback {...({} as unknown as Route.HydrateFallbackProps)} />);
-    expect(screen.getByLabelText('Loading profile')).toBeInTheDocument();
-  });
-
-  it('renders logged out state when user is null', () => {
-    render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} loaderData={{ user: null }} />
-      </MemoryRouter>
+  function renderRoute(loaderData: Route.ComponentProps['loaderData']) {
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/profile',
+          element: <Page {...({} as unknown as Route.ComponentProps)} loaderData={loaderData} />,
+          action: () => ({ success: true }),
+        },
+      ],
+      { initialEntries: ['/profile'] }
     );
+    return render(<RouterProvider router={router} />);
+  }
 
-    const backLink = screen.getByRole('link', { name: /home/i });
-    expect(backLink).toBeInTheDocument();
-    expect(backLink).toHaveAttribute('href', '/');
-
-    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back!' })).toBeInTheDocument();
-    expect(
-      screen.getByText(/sign in to sync your progress across all your devices/i)
-    ).toBeInTheDocument();
-
-    const signInLink = screen.getByRole('link', { name: /sign in/i });
-    expect(signInLink).toBeInTheDocument();
-    expect(signInLink).toHaveAttribute('href', '/sign-in');
-
-    const createAccountLink = screen.getByRole('link', { name: /create account/i });
-    expect(createAccountLink).toBeInTheDocument();
-    expect(createAccountLink).toHaveAttribute('href', '/create-account');
+  describe('meta', () => {
+    it('returns expected meta tags', () => {
+      const tags = meta({} as unknown as Route.MetaArgs);
+      expect(tags).toHaveLength(EXPECTED_META_COUNT);
+      expect(tags[0]).toEqual({ title: 'Profile - Kana' });
+    });
   });
 
-  it('renders logged in state with multi-word name and allows clicking sign out', async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <Page
-          {...({} as unknown as Route.ComponentProps)}
-          loaderData={{ user: { name: 'Alice Smith', email: 'alice@example.com' } }}
-        />
-      </MemoryRouter>
-    );
+  describe('clientLoader', () => {
+    it('provides default loader data with null user when storage is empty', () => {
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      const data = clientLoader();
+      expect(data).toEqual({ user: null });
+    });
 
-    expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('heading', { level: 1, name: 'Alice Smith' })).toBeInTheDocument();
-    expect(screen.getByText('AS')).toBeInTheDocument();
-    expect(screen.getByText(/last sync: sep 13th, 2026 14:20:00/i)).toBeInTheDocument();
-
-    const signOutBtn = screen.getByRole('button', { name: /sign out/i });
-    expect(signOutBtn).toBeInTheDocument();
-    await user.click(signOutBtn);
+    it('provides loader data with user when stored in cookie', () => {
+      const mockUser = {
+        name: 'Ken',
+        email: 'ken@example.com',
+      };
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(mockUser))}; Path=/`;
+      const data = clientLoader();
+      expect(data).toEqual({ user: mockUser });
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    });
   });
 
-  it('renders logged in state with single-word name', () => {
-    render(
-      <MemoryRouter>
-        <Page
-          {...({} as unknown as Route.ComponentProps)}
-          loaderData={{ user: { name: 'Ken', email: 'ken@example.com' } }}
-        />
-      </MemoryRouter>
-    );
+  describe('clientAction', () => {
+    it('invokes logout and returns result', async () => {
+      vi.mocked(logout).mockResolvedValue({ data: { success: true } });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Ken' })).toBeInTheDocument();
-    expect(screen.getByText('K')).toBeInTheDocument();
+      const result = await clientAction(mockActionArgs<typeof clientAction>({}));
+
+      expect(logout).toHaveBeenCalled();
+      expect(result).toEqual({ data: { success: true } });
+    });
   });
 
-  it('renders logged in state with empty name falling back to default user icon', () => {
-    render(
-      <MemoryRouter>
-        <Page
-          {...({} as unknown as Route.ComponentProps)}
-          loaderData={{ user: { name: '   ', email: 'empty@example.com' } }}
-        />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText(/last sync:/i)).toBeInTheDocument();
+  describe('HydrateFallback', () => {
+    it('renders HydrateFallback with loading spinner', () => {
+      render(<HydrateFallback {...({} as unknown as Route.HydrateFallbackProps)} />);
+      expect(screen.getByLabelText('Loading profile')).toBeInTheDocument();
+    });
   });
 
-  it('computes initials correctly in getInitials helper', () => {
-    expect(getInitials('')).toBe('');
-    expect(getInitials('   ')).toBe('');
-    expect(getInitials('Alice')).toBe('A');
-    expect(getInitials('Alice Smith')).toBe('AS');
-    expect(getInitials('Alice Bob Smith')).toBe('AS');
+  describe('Page', () => {
+    it('renders logged out state when user is null', () => {
+      renderRoute({ user: null });
+
+      const backLink = screen.getByRole('link', { name: /home/i });
+      expect(backLink).toBeInTheDocument();
+      expect(backLink).toHaveAttribute('href', '/');
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Welcome back!' })).toBeInTheDocument();
+      expect(
+        screen.getByText(/sign in to sync your progress across all your devices/i)
+      ).toBeInTheDocument();
+
+      const signInLink = screen.getByRole('link', { name: /sign in/i });
+      expect(signInLink).toBeInTheDocument();
+      expect(signInLink).toHaveAttribute('href', '/sign-in');
+
+      const createAccountLink = screen.getByRole('link', { name: /create account/i });
+      expect(createAccountLink).toBeInTheDocument();
+      expect(createAccountLink).toHaveAttribute('href', '/create-account');
+    });
+
+    it('renders logged in state with multi-word name and allows clicking sign out', async () => {
+      const user = userEvent.setup();
+      renderRoute({ user: { name: 'Alice Smith', email: 'alice@example.com' } });
+
+      expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/');
+      expect(screen.getByRole('heading', { level: 1, name: 'Alice Smith' })).toBeInTheDocument();
+      expect(screen.getByText('AS')).toBeInTheDocument();
+      expect(screen.getByText(/last sync: sep 13th, 2026 14:20:00/i)).toBeInTheDocument();
+
+      const signOutBtn = screen.getByRole('button', { name: /sign out/i });
+      expect(signOutBtn).toBeInTheDocument();
+      await user.click(signOutBtn);
+    });
+
+    it('renders logged in state with single-word name', () => {
+      renderRoute({ user: { name: 'Ken', email: 'ken@example.com' } });
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Ken' })).toBeInTheDocument();
+      expect(screen.getByText('K')).toBeInTheDocument();
+    });
+
+    it('renders logged in state with empty name falling back to default user icon', () => {
+      renderRoute({ user: { name: '   ', email: 'empty@example.com' } });
+
+      expect(screen.getByText(/last sync:/i)).toBeInTheDocument();
+    });
+
+    it('renders non-field error alert when actionData contains nonFieldError', () => {
+      mockActionData = { nonFieldError: 'Unable to sign out at this time' };
+      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' } });
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveTextContent('Unable to sign out at this time');
+    });
+
+    it('renders submitting loader state when form is submitting', () => {
+      mockNavigationState = 'submitting';
+      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' } });
+
+      const signOutBtn = screen.getByRole('button');
+      expect(signOutBtn).toBeDisabled();
+      expect(screen.getByLabelText('Signing out...')).toBeInTheDocument();
+    });
+  });
+
+  describe('getInitials', () => {
+    it('computes initials correctly in getInitials helper', () => {
+      expect(getInitials('')).toBe('');
+      expect(getInitials('   ')).toBe('');
+      expect(getInitials('Alice')).toBe('A');
+      expect(getInitials('Alice Smith')).toBe('AS');
+      expect(getInitials('Alice Bob Smith')).toBe('AS');
+    });
   });
 });

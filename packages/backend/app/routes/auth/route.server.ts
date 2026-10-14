@@ -1,11 +1,15 @@
 import type { ServerResponse } from '@kana/helpers/types';
 import { loginSchema, registerSchema } from '@kana/helpers/auth/schemas';
 import { parseFormData } from '@rvf/react-router';
-import { attachSessionCookie, getSessionCookie } from '~/helpers/auth/cookie.server';
+import {
+  attachSessionCookie,
+  deleteSessionCookie,
+  getSessionCookie,
+} from '~/helpers/auth/cookie.server';
 import { login } from '~/helpers/auth/login.server';
 import { register } from '~/helpers/auth/register.server';
 import { defineRoutes } from '~/helpers/define-routes.server';
-import { HTTP_CREATED } from '~/helpers/http-status.server';
+import { HTTP_CREATED, HTTP_OK } from '~/helpers/http-status.server';
 import { makeError } from '~/helpers/make-error.server';
 
 export const authRoutes = defineRoutes({
@@ -81,6 +85,20 @@ export const authRoutes = defineRoutes({
           expires_at: result.data.expires_at,
         },
       });
+
+      return res;
+    },
+  },
+  '/auth/logout': {
+    POST: (req) => {
+      const res = Response.json(
+        {
+          data: { success: true },
+        } satisfies ServerResponse,
+        { status: HTTP_OK }
+      );
+
+      deleteSessionCookie(req, res);
 
       return res;
     },

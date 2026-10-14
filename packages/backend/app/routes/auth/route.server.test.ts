@@ -1,11 +1,11 @@
 import { randomUUIDv7 } from 'bun';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 import type { AuthResult } from '~/helpers/auth/register.server';
-import { attachSessionCookie } from '~/helpers/auth/cookie.server';
+import { attachSessionCookie, deleteSessionCookie } from '~/helpers/auth/cookie.server';
 import { login } from '~/helpers/auth/login.server';
 import { register } from '~/helpers/auth/register.server';
 import { CORS_VALID_ORIGINS } from '~/helpers/config.server';
-import { HTTP_BAD_REQUEST, HTTP_CREATED } from '~/helpers/http-status.server';
+import { HTTP_BAD_REQUEST, HTTP_CREATED, HTTP_OK } from '~/helpers/http-status.server';
 import { makeBunRequest } from '~/mocks/bun/bun-request.mock';
 import { authRoutes } from './route.server';
 
@@ -18,6 +18,7 @@ vi.mock('~/helpers/auth/cookie.server', { spy: true });
 const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);
 const mockAttachSessionCookie = vi.mocked(attachSessionCookie);
+const mockDeleteSessionCookie = vi.mocked(deleteSessionCookie);
 
 const defaultMockRegisterImpl = mockRegister.getMockImplementation()!;
 const defaultMockLoginImpl = mockLogin.getMockImplementation()!;
@@ -199,6 +200,26 @@ describe('authRoutes', () => {
           expires_at: result.data.expires_at,
         },
       });
+    });
+  });
+
+  describe('POST /auth/logout', () => {
+    const { POST } = authRoutes['/auth/logout'];
+
+    test('happy path works and clears session cookies', async () => {
+      const req = makeBunRequest('http://localhost/auth/logout', {
+        method: 'POST',
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+
+      expect(res.status).toBe(HTTP_OK);
+      expect(await res.json()).toMatchObject({
+        data: { success: true },
+      });
+      expect(mockDeleteSessionCookie).toHaveBeenCalledOnce();
+      expect(mockDeleteSessionCookie).toHaveBeenCalledWith(req, res);
     });
   });
 });

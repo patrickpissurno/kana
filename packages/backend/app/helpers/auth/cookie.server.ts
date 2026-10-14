@@ -47,3 +47,40 @@ export function attachSessionCookie(req: BunRequest, res: Response, data: Sessio
   res.headers.append('Set-Cookie', sessionDataCookie.serialize());
   return res;
 }
+
+export function createExpiredSessionCookie(): [Cookie, Cookie] {
+  const sessionCookie = new Cookie(SESSION_COOKIE_NAME, '', {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: 0,
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+
+  const sessionDataCookie = new Cookie(VITE_SESSION_COOKIE_DATA_NAME, '', {
+    path: '/',
+    httpOnly: false,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: 0,
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+
+  return [sessionCookie, sessionDataCookie];
+}
+
+export function deleteSessionCookie(req: BunRequest, res: Response) {
+  const [sessionCookie, sessionDataCookie] = createExpiredSessionCookie();
+  req.cookies.delete(SESSION_COOKIE_NAME, {
+    path: '/',
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+  req.cookies.delete(VITE_SESSION_COOKIE_DATA_NAME, {
+    path: '/',
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+  res.headers.append('Set-Cookie', sessionCookie.serialize());
+  res.headers.append('Set-Cookie', sessionDataCookie.serialize());
+  return res;
+}
