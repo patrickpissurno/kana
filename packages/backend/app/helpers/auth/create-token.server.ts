@@ -1,4 +1,4 @@
-import type { TokenData } from './schemas.server';
+import type { TokenData } from '@kana/helpers/auth/schemas';
 import { AES_GCM_IV_LENGTH } from '../config.server';
 import { sessionKey } from './derive-session-key.server';
 

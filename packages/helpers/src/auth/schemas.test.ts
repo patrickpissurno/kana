@@ -2,17 +2,19 @@ import { describe, expect, it } from 'vitest';
 import {
   EMAIL_ERROR_MESSAGE,
   INVALID_EMAIL_OR_PASSWORD_MESSAGE,
+  loginCredentialsSchema,
   loginSchema,
   NAME_ERROR_MESSAGE,
   PASSWORD_EMPTY_ERROR_MESSAGE,
   PASSWORD_ERROR_MESSAGE,
   registerSchema,
   tokenDataSchema,
-} from './schemas.server';
+  userSchema,
+} from './schemas';
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
-describe('schemas.server', () => {
+describe('auth schemas', () => {
   describe('exported constants', () => {
     it('exports user-facing error messages', () => {
       expect(PASSWORD_ERROR_MESSAGE).toBeDefined();
@@ -138,6 +140,37 @@ describe('schemas.server', () => {
     });
   });
 
+  describe('loginCredentialsSchema', () => {
+    it('accepts valid credentials and trims them', () => {
+      const parsed = loginCredentialsSchema.safeParse({
+        email: '  test@example.com  ',
+        password: '  secret123  ',
+      });
+
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.email).toBe('test@example.com');
+        expect(parsed.data.password).toBe('secret123');
+      }
+    });
+
+    it('rejects invalid email', () => {
+      const parsed = loginCredentialsSchema.safeParse({
+        email: 'not-an-email',
+        password: 'password',
+      });
+      expect(parsed.success).toBe(false);
+    });
+
+    it('rejects empty password', () => {
+      const parsed = loginCredentialsSchema.safeParse({
+        email: 'test@example.com',
+        password: '   ',
+      });
+      expect(parsed.success).toBe(false);
+    });
+  });
+
   describe('loginSchema', () => {
     it('accepts valid email and password credentials', () => {
       const parsed = loginSchema.safeParse({
@@ -210,6 +243,51 @@ describe('schemas.server', () => {
         user_id: VALID_UUID,
         expires_at: 'invalid-date',
       });
+      expect(parsed.success).toBe(false);
+    });
+  });
+
+  describe('userSchema', () => {
+    it('accepts valid user with optional expires_at', () => {
+      const nowIso = new Date().toISOString();
+      const parsed = userSchema.safeParse({
+        email: '  user@example.com  ',
+        name: '  User Name  ',
+        expires_at: nowIso,
+      });
+
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.email).toBe('user@example.com');
+        expect(parsed.data.name).toBe('User Name');
+        expect(parsed.data.expires_at).toBe(nowIso);
+      }
+    });
+
+    it('accepts valid user without expires_at', () => {
+      const parsed = userSchema.safeParse({
+        email: 'user@example.com',
+        name: 'User Name',
+      });
+
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects invalid email for user', () => {
+      const parsed = userSchema.safeParse({
+        email: 'not-an-email',
+        name: 'User Name',
+      });
+
+      expect(parsed.success).toBe(false);
+    });
+
+    it('rejects empty name for user', () => {
+      const parsed = userSchema.safeParse({
+        email: 'user@example.com',
+        name: '   ',
+      });
+
       expect(parsed.success).toBe(false);
     });
   });

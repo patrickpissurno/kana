@@ -14,9 +14,21 @@ describe('Profile Route', () => {
     expect(tags[0]).toEqual({ title: 'Profile - Kana' });
   });
 
-  it('provides default loader data with null user', () => {
+  it('provides default loader data with null user when storage is empty', () => {
+    localStorage.clear();
     const data = clientLoader();
     expect(data).toEqual({ user: null });
+  });
+
+  it('provides loader data with user when stored in localStorage', () => {
+    const mockUser = {
+      name: 'Ken',
+      email: 'ken@example.com',
+    };
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    const data = clientLoader();
+    expect(data).toEqual({ user: mockUser });
+    localStorage.clear();
   });
 
   it('renders HydrateFallback with loading spinner', () => {
@@ -73,7 +85,10 @@ describe('Profile Route', () => {
   it('renders logged in state with single-word name', () => {
     render(
       <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} loaderData={{ user: { name: 'Ken' } }} />
+        <Page
+          {...({} as unknown as Route.ComponentProps)}
+          loaderData={{ user: { name: 'Ken', email: 'ken@example.com' } }}
+        />
       </MemoryRouter>
     );
 
@@ -84,7 +99,10 @@ describe('Profile Route', () => {
   it('renders logged in state with empty name falling back to default user icon', () => {
     render(
       <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} loaderData={{ user: { name: '   ' } }} />
+        <Page
+          {...({} as unknown as Route.ComponentProps)}
+          loaderData={{ user: { name: '   ', email: 'empty@example.com' } }}
+        />
       </MemoryRouter>
     );
 

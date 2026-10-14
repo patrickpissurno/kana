@@ -17,6 +17,7 @@
   "dependencies": {
     "@base-ui/react": "catalog:",
     "@fontsource-variable/inter": "catalog:",
+    "@kana/helpers": "workspace:*",
     "@react-router/fs-routes": "catalog:",
     "@react-router/node": "catalog:",
     "@rvf/react-router": "catalog:",

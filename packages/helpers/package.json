@@ -1,0 +1,32 @@
+{
+  "name": "@kana/helpers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": [
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*"
+    ]
+  },
+  "scripts": {
+    "check": "bun run typecheck && bun run fmt && bun run lint",
+    "fmt": "bun run --bun oxfmt",
+    "lint": "bun run --bun oxlint",
+    "test": "bun run --bun vitest run",
+    "typecheck": "bun run --bun tsc"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

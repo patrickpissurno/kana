@@ -1,9 +1,11 @@
+import type { User } from '@kana/helpers/auth/schemas';
 import { cn } from 'cn';
-import { ArrowLeft, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Loader2, User as UserIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import type { Route } from './+types/route';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { getStoredUser } from '../../helpers/user-storage';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,17 +14,12 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export type UserProfile = {
-  name: string;
-  email: string;
-};
-
 export type ProfileLoaderData = {
-  user: UserProfile | null;
+  user: User | null;
 };
 
 export function clientLoader(): ProfileLoaderData {
-  return { user: null };
+  return { user: getStoredUser() };
 }
 
 export function HydrateFallback({}: Route.HydrateFallbackProps) {
@@ -66,7 +63,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
           <>
             <Avatar className="border-border size-20 border">
               <AvatarFallback className="bg-muted text-muted-foreground text-xl font-semibold">
-                {getInitials(user.name) || <User className="size-10" />}
+                {getInitials(user.name) || <UserIcon className="size-10" />}
               </AvatarFallback>
             </Avatar>
 
@@ -90,7 +87,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
           <>
             <Avatar className="border-border size-20 border">
               <AvatarFallback className="bg-muted text-muted-foreground">
-                <User className="size-10" />
+                <UserIcon className="size-10" />
               </AvatarFallback>
             </Avatar>
 

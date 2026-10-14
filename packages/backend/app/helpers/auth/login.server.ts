@@ -1,6 +1,6 @@
+import type { LoginPayload } from '@kana/helpers/auth/schemas';
 import { password } from 'bun';
 import type { AuthResult, UserRecord } from './register.server';
-import type { LoginPayload } from './schemas.server';
 import { SESSION_TTL_SECONDS } from '../config.server';
 import { db } from '../db.server';
 import { createToken } from './create-token.server';

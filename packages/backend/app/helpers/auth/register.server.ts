@@ -1,6 +1,6 @@
+import type { RegisterPayload } from '@kana/helpers/auth/schemas';
 import { password } from 'bun';
 import type { ServerError } from '../make-error.server';
-import type { RegisterPayload } from './schemas.server';
 import { SESSION_TTL_SECONDS } from '../config.server';
 import { db } from '../db.server';
 import { createToken } from './create-token.server';

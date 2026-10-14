@@ -1,7 +1,8 @@
 ## Workspace:
 - root: ./ (monorepo) 
 - web: ./packages/web -> main app
-- backend: ./packages/backend -> main app
+- backend: ./packages/backend -> backend
+- @kana/helpers: ./packages/helpers -> shared utils
 
 ## Stack:
 - bun 1.4.2
@@ -48,6 +49,11 @@ When working on the backend, the commands are:
 - `bun --filter backend check`
 - `bun --filter backend test`
 - `bun run db:dump`
+
+When working on @kana/helpers, the commands are:
+- `bun --filter @kana/helpers test <filename>.test.{ts,tsx}`
+- `bun --filter @kana/helpers check`
+- `bun --filter @kana/helpers test`
 
 Gotchas:
 - Never run just `bun test`, as it will try to use the bun test runner instead of vitest

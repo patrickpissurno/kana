@@ -7,13 +7,13 @@ export const EMAIL_ERROR_MESSAGE = 'Please enter a valid email address';
 export const PASSWORD_EMPTY_ERROR_MESSAGE = 'Please enter a password';
 export const INVALID_EMAIL_OR_PASSWORD_MESSAGE = 'Invalid email or password';
 
-const MIN_PASSWORD_LENGTH = 8;
-const MIN_NAME_LENGTH = 1;
+export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_NAME_LENGTH = 1;
 
-const REGEX_LOWERCASE = /[a-z]/;
-const REGEX_UPPERCASE = /[A-Z]/;
-const REGEX_NUMBER = /[0-9]/;
-const REGEX_SPECIAL = /[^a-zA-Z0-9]/;
+export const REGEX_LOWERCASE = /[a-z]/;
+export const REGEX_UPPERCASE = /[A-Z]/;
+export const REGEX_NUMBER = /[0-9]/;
+export const REGEX_SPECIAL = /[^a-zA-Z0-9]/;
 
 export const registerSchema = z.object({
   email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
@@ -28,23 +28,31 @@ export const registerSchema = z.object({
   name: z.string(NAME_ERROR_MESSAGE).trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
 });
 
-export const loginSchema = z
-  .object({
-    email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
-    password: z.string(PASSWORD_EMPTY_ERROR_MESSAGE).trim().min(1, PASSWORD_EMPTY_ERROR_MESSAGE),
+export const loginCredentialsSchema = z.object({
+  email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
+  password: z.string(PASSWORD_EMPTY_ERROR_MESSAGE).trim().min(1, PASSWORD_EMPTY_ERROR_MESSAGE),
+});
+
+export const loginSchema = loginCredentialsSchema.or(
+  z.object({
+    email: z.undefined().optional(),
+    password: z.undefined().optional(),
   })
-  .or(
-    z.object({
-      email: z.undefined().optional(),
-      password: z.undefined().optional(),
-    })
-  );
+);
 
 export const tokenDataSchema = z.object({
   user_id: z.uuid(),
   expires_at: z.iso.datetime(),
 });
 
+export const userSchema = z.object({
+  email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
+  name: z.string(NAME_ERROR_MESSAGE).trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
+  expires_at: z.iso.datetime().optional(),
+});
+
 export type RegisterPayload = z.infer<typeof registerSchema>;
+export type LoginCredentialsPayload = z.infer<typeof loginCredentialsSchema>;
 export type LoginPayload = z.infer<typeof loginSchema>;
 export type TokenData = z.infer<typeof tokenDataSchema>;
+export type User = z.infer<typeof userSchema>;

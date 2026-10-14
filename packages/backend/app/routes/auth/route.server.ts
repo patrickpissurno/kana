@@ -1,8 +1,8 @@
+import { loginSchema, registerSchema } from '@kana/helpers/auth/schemas';
 import { parseFormData } from '@rvf/react-router';
 import { attachSessionCookie, getSessionCookie } from '~/helpers/auth/cookie.server';
 import { login } from '~/helpers/auth/login.server';
 import { register } from '~/helpers/auth/register.server';
-import { loginSchema, registerSchema } from '~/helpers/auth/schemas.server';
 import { defineRoutes } from '~/helpers/define-routes.server';
 import { HTTP_CREATED } from '~/helpers/http-status.server';
 import { makeError } from '~/helpers/make-error.server';
