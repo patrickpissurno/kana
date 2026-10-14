@@ -1,6 +1,6 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import { userSchema } from '@kana/helpers/auth/schemas';
-import { safeJSONParse } from './safe-json-parse';
+import { safeJSONParse } from '@kana/helpers/utils/safe-json-parse';
 
 export const USER_STORAGE_KEY = 'user';
 

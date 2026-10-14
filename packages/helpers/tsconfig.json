@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.json",
   "include": ["**/*"],
   "compilerOptions": {
-    "lib": ["ESNext"],
-    "types": ["bun"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["bun", "vite/client"],
     "rootDirs": ["."]
   }
 }
