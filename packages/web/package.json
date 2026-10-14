@@ -19,6 +19,7 @@
     "@fontsource-variable/inter": "catalog:",
     "@react-router/fs-routes": "catalog:",
     "@react-router/node": "catalog:",
+    "@rvf/react-router": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "date-fns": "catalog:",
