@@ -24,9 +24,11 @@ export const authRoutes = defineRoutes({
 
       const res = Response.json(
         {
-          email: result.data.user.email,
-          name: result.data.user.name,
-          expires_at: result.data.expires_at,
+          data: {
+            email: result.data.user.email,
+            name: result.data.user.name,
+            expires_at: result.data.expires_at,
+          },
         },
         { status: HTTP_CREATED }
       );
@@ -54,9 +56,11 @@ export const authRoutes = defineRoutes({
 
       const res = Response.json(
         {
-          email: result.data.user.email,
-          name: result.data.user.name,
-          expires_at: result.data.expires_at,
+          data: {
+            email: result.data.user.email,
+            name: result.data.user.name,
+            expires_at: result.data.expires_at,
+          },
         },
         { status: HTTP_CREATED }
       );

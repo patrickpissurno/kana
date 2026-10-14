@@ -1,8 +1,8 @@
 import { loginCredentialsSchema } from '@kana/helpers/auth/schemas';
-import { Field, ValidatedForm } from '@rvf/react-router';
+import { Field, useForm } from '@rvf/react-router';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { Link, useActionData, useNavigate, useNavigation } from 'react-router';
+import { Link, useActionData, useNavigate } from 'react-router';
 import { login } from '~/endpoints/auth/login';
 import type { Route } from './+types/route';
 import { Button } from '../../components/ui/button';
@@ -23,8 +23,6 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 export default function Page({}: Route.ComponentProps) {
   const actionData = useActionData<typeof clientAction>();
   const navigate = useNavigate();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === 'submitting';
 
   useEffect(() => {
     if (actionData?.data) {
@@ -37,6 +35,20 @@ export default function Page({}: Route.ComponentProps) {
   }, [actionData, navigate]);
 
   const nonFieldError = actionData?.nonFieldError;
+
+  const form = useForm({
+    method: 'post',
+    schema: loginCredentialsSchema,
+    validationBehaviorConfig: {
+      initial: 'onSubmit',
+      whenTouched: 'onSubmit',
+      whenSubmitted: 'onSubmit',
+    },
+    defaultValues: { email: '', password: '' },
+    otherFormProps: {
+      noValidate: true,
+    },
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center">
@@ -65,20 +77,14 @@ export default function Page({}: Route.ComponentProps) {
         </div>
       )}
 
-      <ValidatedForm
-        noValidate
-        schema={loginCredentialsSchema}
-        defaultValues={{ email: '', password: '' }}
-        method="post"
-        className="flex w-full flex-col gap-4"
-      >
-        <Field name="email">
+      <form {...form.getFormProps()} className="flex w-full flex-col gap-4">
+        <Field scope={form.scope('email')}>
           {(field) => (
             <div className="flex flex-col gap-1.5 text-left">
               <Input
                 {...field.getInputProps({
-                  id: 'email',
-                  type: 'email',
+                  type: 'text',
+                  inputMode: 'email',
                   placeholder: 'Email',
                   autoComplete: 'email',
                   autoCapitalize: 'none',
@@ -95,12 +101,11 @@ export default function Page({}: Route.ComponentProps) {
           )}
         </Field>
 
-        <Field name="password">
+        <Field scope={form.scope('password')}>
           {(field) => (
             <div className="flex flex-col gap-1.5 text-left">
               <Input
                 {...field.getInputProps({
-                  id: 'password',
                   type: 'password',
                   placeholder: 'Password',
                   autoComplete: 'current-password',
@@ -119,17 +124,17 @@ export default function Page({}: Route.ComponentProps) {
           <Button
             type="submit"
             size="lg"
-            disabled={isSubmitting}
+            disabled={form.formState.isSubmitting}
             className="w-full text-base font-semibold select-none"
           >
-            {isSubmitting ? (
+            {form.formState.isSubmitting ? (
               <Loader2 className="size-5 animate-spin" aria-label="Signing in..." />
             ) : (
               'Sign in'
             )}
           </Button>
         </div>
-      </ValidatedForm>
+      </form>
     </main>
   );
 }
