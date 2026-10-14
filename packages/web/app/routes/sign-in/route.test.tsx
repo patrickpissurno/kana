@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Route } from './+types/route';
 import { mockActionArgs } from '../../mocks/react-router/action';
 import Page, { clientAction, meta } from './route';
@@ -41,10 +41,6 @@ describe('Sign In Route', () => {
     mockSetStoredUser.mockReset();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   describe('meta', () => {
     it('returns expected meta tags', () => {
       const tags = meta({} as unknown as Route.MetaArgs);
@@ -55,8 +51,6 @@ describe('Sign In Route', () => {
 
   describe('clientAction', () => {
     it('successfully proxies credentials and returns user data on success', async () => {
-      vi.stubEnv('VITE_BACKEND_URL', 'http://localhost:3001');
-
       const formData = new FormData();
       formData.set('email', 'alice@example.com');
       formData.set('password', 'secret');
@@ -84,29 +78,7 @@ describe('Sign In Route', () => {
       expect(result).toEqual({ success: true, user: MOCK_USER });
     });
 
-    it('falls back to empty string when VITE_BACKEND_URL is not set', async () => {
-      delete process.env['VITE_BACKEND_URL'];
-
-      const formData = new FormData();
-      const mockFetch = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(new Response(JSON.stringify(MOCK_USER), { status: 200 }));
-      vi.stubGlobal('fetch', mockFetch);
-
-      const request = new Request('http://localhost:3000/sign-in', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await clientAction(mockActionArgs<typeof clientAction>({ request }));
-
-      expect(mockFetch).toHaveBeenCalledWith('/auth/login', expect.any(Object));
-      expect(result).toEqual({ success: true, user: MOCK_USER });
-    });
-
     it('returns validationError when backend responds with field errors', async () => {
-      vi.stubEnv('VITE_BACKEND_URL', 'http://localhost:3001');
-
       const fieldErrors = { email: 'Please enter a valid email address' };
       const mockFetch = vi
         .fn<typeof fetch>()
@@ -128,8 +100,6 @@ describe('Sign In Route', () => {
     });
 
     it('returns nonFieldError when backend responds with non-field error', async () => {
-      vi.stubEnv('VITE_BACKEND_URL', 'http://localhost:3001');
-
       const mockFetch = vi.fn<typeof fetch>().mockResolvedValue(
         new Response(JSON.stringify({ error: { nonFieldError: 'Invalid email or password' } }), {
           status: 400,
@@ -148,8 +118,6 @@ describe('Sign In Route', () => {
     });
 
     it('returns fallback nonFieldError when error body is unexpected', async () => {
-      vi.stubEnv('VITE_BACKEND_URL', 'http://localhost:3001');
-
       const mockFetch = vi
         .fn<typeof fetch>()
         .mockResolvedValue(new Response(JSON.stringify({}), { status: 500 }));
