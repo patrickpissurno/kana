@@ -48,21 +48,19 @@ describe('authRoutes', () => {
 
       expect(res.status).toBe(HTTP_BAD_REQUEST);
       expect(await res.json()).toMatchObject({
-        error: {
-          fieldErrors: {
-            email: 'Please enter a valid email address',
-            name: 'Please enter a name or nickname',
-            password:
-              'Password must be at least 8 characters with lowercase, uppercase, number, and special character',
-          },
+        fieldErrors: {
+          email: 'Please enter a valid email address',
+          name: 'Please enter a name or nickname',
+          password:
+            'Password must be at least 8 characters with lowercase, uppercase, number, and special character',
         },
       });
     });
 
     it('it forwards register() errors on failure', async () => {
       const result = {
-        data: undefined,
-        error: { fieldErrors: { email: 'Already registered' }, nonFieldError: 'Custom error' },
+        fieldErrors: { email: 'Already registered' },
+        nonFieldError: 'Custom error',
       } satisfies AuthResult;
 
       mockRegister.mockImplementation(async () => Promise.resolve(result));
@@ -76,7 +74,7 @@ describe('authRoutes', () => {
       const res = await POST(req);
 
       expect(res.status).toBe(HTTP_BAD_REQUEST);
-      expect(await res.json()).toMatchObject({ error: result.error });
+      expect(await res.json()).toMatchObject(result);
     });
 
     test('happy path works', async () => {
@@ -86,7 +84,6 @@ describe('authRoutes', () => {
           token: 'token',
           expires_at: new Date().toISOString(),
         },
-        error: undefined,
       } satisfies AuthResult;
 
       mockRegister.mockImplementation(async () => Promise.resolve(result));
@@ -132,18 +129,15 @@ describe('authRoutes', () => {
 
       expect(res.status).toBe(HTTP_BAD_REQUEST);
       expect(await res.json()).toMatchObject({
-        error: {
-          fieldErrors: {
-            email: 'Please enter a valid email address',
-          },
+        fieldErrors: {
+          email: 'Please enter a valid email address',
         },
       });
     });
 
     it('it forwards login() errors on failure', async () => {
       const result = {
-        data: undefined,
-        error: { nonFieldError: 'Invalid email or password' },
+        nonFieldError: 'Invalid email or password',
       } satisfies AuthResult;
 
       mockLogin.mockImplementation(async () => Promise.resolve(result));
@@ -157,7 +151,7 @@ describe('authRoutes', () => {
       const res = await POST(req);
 
       expect(res.status).toBe(HTTP_BAD_REQUEST);
-      expect(await res.json()).toMatchObject({ error: result.error });
+      expect(await res.json()).toMatchObject(result);
     });
 
     test('happy path works', async () => {
@@ -167,7 +161,6 @@ describe('authRoutes', () => {
           token: 'token',
           expires_at: new Date().toISOString(),
         },
-        error: undefined,
       } satisfies AuthResult;
 
       mockLogin.mockImplementation(async () => Promise.resolve(result));

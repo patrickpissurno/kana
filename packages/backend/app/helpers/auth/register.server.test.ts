@@ -43,7 +43,8 @@ describe('register.server', () => {
     expect(result.data?.user.name).toBe(TEST_USER.name);
     expect(result.data?.token).toBeDefined();
     expect(result.data?.expires_at).toBeDefined();
-    expect(result.error).toBeUndefined();
+    expect(result.fieldErrors).toBeUndefined();
+    expect(result.nonFieldError).toBeUndefined();
   });
 
   it('handles empty database return by catching error and returning unknown error', async () => {
@@ -56,7 +57,7 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.nonFieldError).toBe('An unknown error occured');
+    expect(result.nonFieldError).toBe('An unknown error occured');
   });
 
   it('returns field error when unique constraint is violated via error code', async () => {
@@ -69,7 +70,7 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.fieldErrors?.['email']).toBe('This email is already registered');
+    expect(result.fieldErrors?.['email']).toBe('This email is already registered');
   });
 
   it('returns field error when unique constraint is violated via errno', async () => {
@@ -82,7 +83,7 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.fieldErrors?.['email']).toBe('This email is already registered');
+    expect(result.fieldErrors?.['email']).toBe('This email is already registered');
   });
 
   it('returns unknown error when caught error is not an object', async () => {
@@ -95,7 +96,7 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.nonFieldError).toBe('An unknown error occured');
+    expect(result.nonFieldError).toBe('An unknown error occured');
   });
 
   it('returns unknown error when caught error is null', async () => {
@@ -108,7 +109,7 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.nonFieldError).toBe('An unknown error occured');
+    expect(result.nonFieldError).toBe('An unknown error occured');
   });
 
   it('returns unknown error when caught error is an object without matching code or errno', async () => {
@@ -121,6 +122,6 @@ describe('register.server', () => {
     });
 
     expect(result.data).toBeUndefined();
-    expect(result.error?.nonFieldError).toBe('An unknown error occured');
+    expect(result.nonFieldError).toBe('An unknown error occured');
   });
 });

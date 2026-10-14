@@ -64,7 +64,8 @@ describe('login.server', () => {
         refreshToken: undefined,
       });
 
-      expect(result.error?.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.data).toBeUndefined();
     });
 
     it('returns INVALID_CREDENTIALS_ERROR when password does not match', async () => {
@@ -78,7 +79,8 @@ describe('login.server', () => {
         refreshToken: undefined,
       });
 
-      expect(result.error?.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.data).toBeUndefined();
     });
   });
 
@@ -106,7 +108,8 @@ describe('login.server', () => {
         refreshToken: undefined,
       });
 
-      expect(result.error?.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.data).toBeUndefined();
     });
 
     it('returns INVALID_CREDENTIALS_ERROR when existing token is expired', async () => {
@@ -122,7 +125,8 @@ describe('login.server', () => {
         refreshToken,
       });
 
-      expect(result.error?.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.data).toBeUndefined();
     });
 
     it('returns INVALID_CREDENTIALS_ERROR when existing token user is not found', async () => {
@@ -138,7 +142,8 @@ describe('login.server', () => {
         refreshToken,
       });
 
-      expect(result.error?.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.nonFieldError).toBe(INVALID_CREDENTIALS_ERROR);
+      expect(result.data).toBeUndefined();
     });
   });
 });

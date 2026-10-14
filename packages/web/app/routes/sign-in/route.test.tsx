@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { login } from '~/endpoints/auth/login';
 import type { Route } from './+types/route';
 import { mockActionArgs } from '../../mocks/react-router/action';
 import Page, { clientAction, meta } from './route';
@@ -27,6 +28,10 @@ vi.mock('react-router', async (importOriginal) => {
   };
 });
 
+vi.mock('~/endpoints/auth/login', () => ({
+  login: vi.fn(),
+}));
+
 const mockSetStoredUser = vi.fn();
 vi.mock('../../helpers/user-storage', () => ({
   setStoredUser: (user: unknown) => mockSetStoredUser(user),
@@ -50,15 +55,12 @@ describe('Sign In Route', () => {
   });
 
   describe('clientAction', () => {
-    it('successfully proxies credentials and returns user data on success', async () => {
+    it('invokes login with request form data and returns result', async () => {
       const formData = new FormData();
       formData.set('email', 'alice@example.com');
       formData.set('password', 'secret');
 
-      const mockFetch = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(new Response(JSON.stringify(MOCK_USER), { status: 200 }));
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(login).mockResolvedValue({ data: MOCK_USER });
 
       const request = new Request('http://localhost:3000/sign-in', {
         method: 'POST',
@@ -67,70 +69,8 @@ describe('Sign In Route', () => {
 
       const result = await clientAction(mockActionArgs<typeof clientAction>({ request }));
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/auth/login',
-        expect.objectContaining({
-          method: 'POST',
-          mode: 'cors',
-          credentials: 'include',
-        })
-      );
-      expect(result).toEqual({ success: true, user: MOCK_USER });
-    });
-
-    it('returns validationError when backend responds with field errors', async () => {
-      const fieldErrors = { email: 'Please enter a valid email address' };
-      const mockFetch = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ error: { fieldErrors } }), { status: 400 })
-        );
-      vi.stubGlobal('fetch', mockFetch);
-
-      const request = new Request('http://localhost:3000/sign-in', {
-        method: 'POST',
-        body: new FormData(),
-      });
-
-      const result = (await clientAction(
-        mockActionArgs<typeof clientAction>({ request })
-      )) as unknown as { data: { fieldErrors: Record<string, string> } };
-
-      expect(result.data.fieldErrors).toEqual(fieldErrors);
-    });
-
-    it('returns nonFieldError when backend responds with non-field error', async () => {
-      const mockFetch = vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(JSON.stringify({ error: { nonFieldError: 'Invalid email or password' } }), {
-          status: 400,
-        })
-      );
-      vi.stubGlobal('fetch', mockFetch);
-
-      const request = new Request('http://localhost:3000/sign-in', {
-        method: 'POST',
-        body: new FormData(),
-      });
-
-      const result = await clientAction(mockActionArgs<typeof clientAction>({ request }));
-
-      expect(result).toEqual({ nonFieldError: 'Invalid email or password' });
-    });
-
-    it('returns fallback nonFieldError when error body is unexpected', async () => {
-      const mockFetch = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 500 }));
-      vi.stubGlobal('fetch', mockFetch);
-
-      const request = new Request('http://localhost:3000/sign-in', {
-        method: 'POST',
-        body: new FormData(),
-      });
-
-      const result = await clientAction(mockActionArgs<typeof clientAction>({ request }));
-
-      expect(result).toEqual({ nonFieldError: 'An unexpected error occurred' });
+      expect(login).toHaveBeenCalledWith({ formData });
+      expect(result).toEqual({ data: MOCK_USER });
     });
   });
 
@@ -174,7 +114,7 @@ describe('Sign In Route', () => {
     });
 
     it('persists user and navigates to /profile with replace upon success actionData', () => {
-      mockActionData = { success: true, user: MOCK_USER };
+      mockActionData = { data: MOCK_USER };
       mockNavigate.mockReturnValue(undefined);
 
       renderRoute();
@@ -184,8 +124,9 @@ describe('Sign In Route', () => {
     });
 
     it('handles rejecting navigate promise gracefully', async () => {
-      mockActionData = { success: true, user: MOCK_USER };
+      mockActionData = { data: MOCK_USER };
       const rejectingPromise = Promise.reject(new Error('Navigation cancelled'));
+      rejectingPromise.catch(() => undefined);
       mockNavigate.mockReturnValue(rejectingPromise);
 
       renderRoute();

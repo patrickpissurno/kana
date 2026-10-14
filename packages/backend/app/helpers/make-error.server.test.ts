@@ -16,9 +16,7 @@ describe('makeError', () => {
 
     expect(res.status).toBe(HTTP_BAD_REQUEST);
     expect(await res.json()).toMatchObject({
-      error: {
-        fieldErrors: { email: TEST_EMAIL_ERROR },
-      },
+      fieldErrors: { email: TEST_EMAIL_ERROR },
     });
   });
 
@@ -30,10 +28,8 @@ describe('makeError', () => {
 
     expect(res.status).toBe(HTTP_BAD_REQUEST);
     expect(await res.json()).toMatchObject({
-      error: {
-        fieldErrors: { custom: TEST_CUSTOM_ERROR },
-        nonFieldError: TEST_NON_FIELD_ERROR,
-      },
+      fieldErrors: { custom: TEST_CUSTOM_ERROR },
+      nonFieldError: TEST_NON_FIELD_ERROR,
     });
   });
 
@@ -44,10 +40,8 @@ describe('makeError', () => {
 
     expect(res.status).toBe(HTTP_BAD_REQUEST);
     expect(await res.json()).toEqual({
-      error: {
-        fieldErrors: undefined,
-        nonFieldError: TEST_NON_FIELD_ERROR,
-      },
+      fieldErrors: undefined,
+      nonFieldError: TEST_NON_FIELD_ERROR,
     });
   });
 
@@ -56,10 +50,8 @@ describe('makeError', () => {
 
     expect(res.status).toBe(HTTP_BAD_REQUEST);
     expect(await res.json()).toEqual({
-      error: {
-        fieldErrors: undefined,
-        nonFieldError: undefined,
-      },
+      fieldErrors: undefined,
+      nonFieldError: undefined,
     });
   });
 });

@@ -1,4 +1,4 @@
-import type { FetchResponse } from '@kana/helpers/utils/safe-fetch';
+import type { ServerResponse } from '@kana/helpers/types';
 import { safeFetch } from '@kana/helpers/utils/safe-fetch';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { endpoint } from './endpoint';
@@ -8,6 +8,7 @@ vi.mock('@kana/helpers/utils/safe-fetch', () => ({
 }));
 
 const STATUS_OK = 200;
+const STATUS_BAD_REQUEST = 400;
 
 describe('endpoint', () => {
   beforeEach(() => {
@@ -20,19 +21,18 @@ describe('endpoint', () => {
 
   it('creates an endpoint wrapper that invokes fn and merges options with safeFetch init', async () => {
     type Props = { id: string };
-    type Result = { ok: boolean };
+    type Result = ServerResponse<{ ok: boolean }>;
 
-    const mockFetchResponse: FetchResponse<Result, unknown> = {
+    vi.mocked(safeFetch).mockResolvedValue({
       status: STATUS_OK,
       statusText: 'OK',
       headers: new Headers({ 'Content-Type': 'application/json' }),
-      result: { ok: true },
+      result: { data: { ok: true } },
       error: undefined,
-    };
-    vi.mocked(safeFetch).mockResolvedValue(mockFetchResponse);
+    });
 
-    const testEndpoint = endpoint<Props, Result, unknown>(async ({ safeFetch: client, props }) => {
-      return client(`http://example.com/items/${props.id}`, {
+    const testEndpoint = endpoint<Props, Result>(async ({ f, props }) => {
+      return f(`http://example.com/items/${props.id}`, {
         method: 'GET',
         headers: { 'X-Custom': '1' },
       });
@@ -41,8 +41,7 @@ describe('endpoint', () => {
     const controller = new AbortController();
     const result = await testEndpoint({ id: 'item-123' }, { signal: controller.signal });
 
-    expect(result.status).toBe(STATUS_OK);
-    expect(result.result).toEqual({ ok: true });
+    expect(result).toEqual({ data: { ok: true } });
     expect(safeFetch).toHaveBeenCalledWith(
       'http://example.com/items/item-123',
       expect.objectContaining({
@@ -55,28 +54,47 @@ describe('endpoint', () => {
 
   it('works when options are omitted', async () => {
     type Props = { query: string };
-    type Result = { data: string };
+    type Result = ServerResponse<{ data: string }>;
 
-    const mockFetchResponse: FetchResponse<Result, unknown> = {
+    vi.mocked(safeFetch).mockResolvedValue({
       status: STATUS_OK,
       statusText: 'OK',
       headers: new Headers(),
-      result: { data: 'test' },
+      result: { data: { data: 'test' } },
       error: undefined,
-    };
-    vi.mocked(safeFetch).mockResolvedValue(mockFetchResponse);
+    });
 
-    const testEndpoint = endpoint<Props, Result, unknown>(async ({ safeFetch: client, props }) => {
-      return client(`http://example.com/search?q=${props.query}`);
+    const testEndpoint = endpoint<Props, Result>(async ({ f, props }) => {
+      return f(`http://example.com/search?q=${props.query}`);
     });
 
     const result = await testEndpoint({ query: 'bun' });
 
-    expect(result.status).toBe(STATUS_OK);
-    expect(result.result).toEqual({ data: 'test' });
+    expect(result).toEqual({ data: { data: 'test' } });
     expect(safeFetch).toHaveBeenCalledWith(
       'http://example.com/search?q=bun',
       expect.objectContaining({})
     );
+  });
+
+  it('merges error from safeFetch when request fails', async () => {
+    type Props = { id: string };
+    type Result = ServerResponse<{ ok: boolean }>;
+
+    vi.mocked(safeFetch).mockResolvedValue({
+      status: STATUS_BAD_REQUEST,
+      statusText: 'Bad Request',
+      headers: new Headers(),
+      result: undefined,
+      error: { nonFieldError: 'Error occurred' },
+    });
+
+    const testEndpoint = endpoint<Props, Result>(async ({ f, props }) => {
+      return f(`http://example.com/items/${props.id}`);
+    });
+
+    const result = await testEndpoint({ id: 'item-123' });
+
+    expect(result).toEqual({ nonFieldError: 'Error occurred' });
   });
 });

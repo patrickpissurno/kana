@@ -32,6 +32,6 @@ describe('register.server (db)', () => {
 
     const duplicateResult = await register(user);
     expect(duplicateResult.data).toBeUndefined();
-    expect(duplicateResult.error?.fieldErrors?.['email']).toBe('This email is already registered');
+    expect(duplicateResult.fieldErrors?.['email']).toBe('This email is already registered');
   });
 });
