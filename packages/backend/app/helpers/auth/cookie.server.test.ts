@@ -1,19 +1,46 @@
+import type { User } from '@kana/helpers/auth/schemas';
 import { describe, expect, it } from 'vitest';
 import { makeBunRequest } from '~/mocks/bun/bun-request.mock';
-import { SESSION_COOKIE_DOMAIN, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from '../config.server';
+import type { SessionCookieData } from './cookie.server';
+import {
+  SESSION_COOKIE_DOMAIN,
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_SECONDS,
+  VITE_SESSION_COOKIE_DATA_NAME,
+} from '../config.server';
 import { attachSessionCookie, createSessionCookie, getSessionCookie } from './cookie.server';
+
+const MOCK_USER: User = {
+  email: 'test@example.com',
+  name: 'Test User',
+  expires_at: '2026-10-14T00:00:00.000Z',
+};
+
+const VALID_SESSION_DATA: SessionCookieData = {
+  token: 'token-123',
+  user: MOCK_USER,
+};
 
 describe('cookie.server', () => {
   describe('createSessionCookie', () => {
-    it('creates a session cookie with default attributes without domain', () => {
-      const cookie = createSessionCookie('test-token');
-      expect(cookie.name).toBe(SESSION_COOKIE_NAME);
-      expect(cookie.value).toBe('test-token');
-      expect(cookie.maxAge).toBe(SESSION_TTL_SECONDS);
-      expect(cookie.httpOnly).toBe(true);
-      expect(cookie.secure).toBe(true);
-      expect(cookie.sameSite).toBe('lax');
-      expect(cookie.domain).toBe(SESSION_COOKIE_DOMAIN);
+    it('creates session and session data cookies with expected attributes', () => {
+      const [sessionCookie, sessionDataCookie] = createSessionCookie(VALID_SESSION_DATA);
+
+      expect(sessionCookie.name).toBe(SESSION_COOKIE_NAME);
+      expect(sessionCookie.value).toBe(VALID_SESSION_DATA.token);
+      expect(sessionCookie.maxAge).toBe(SESSION_TTL_SECONDS);
+      expect(sessionCookie.httpOnly).toBe(true);
+      expect(sessionCookie.secure).toBe(true);
+      expect(sessionCookie.sameSite).toBe('lax');
+      expect(sessionCookie.domain).toBe(SESSION_COOKIE_DOMAIN);
+
+      expect(sessionDataCookie.name).toBe(VITE_SESSION_COOKIE_DATA_NAME);
+      expect(sessionDataCookie.value).toBe(JSON.stringify(VALID_SESSION_DATA.user));
+      expect(sessionDataCookie.maxAge).toBe(SESSION_TTL_SECONDS);
+      expect(sessionDataCookie.httpOnly).toBe(false);
+      expect(sessionDataCookie.secure).toBe(true);
+      expect(sessionDataCookie.sameSite).toBe('lax');
+      expect(sessionDataCookie.domain).toBe(SESSION_COOKIE_DOMAIN);
     });
   });
 
@@ -35,23 +62,22 @@ describe('cookie.server', () => {
   });
 
   describe('attachSessionCookie', () => {
-    it('attaches cookie to req.cookies and response headers', () => {
+    it('attaches both cookies to req.cookies and response headers', () => {
       const req = makeBunRequest('http://localhost:3001/auth/login');
       const res = Response.json({ ok: true });
 
-      const updatedResponse = attachSessionCookie(req, res, 'token-123');
+      const updatedResponse = attachSessionCookie(req, res, VALID_SESSION_DATA);
 
-      expect(req.cookies.get(SESSION_COOKIE_NAME)).toBe('token-123');
-      expect(updatedResponse.headers.get('Set-Cookie')).toContain('kana-session=token-123');
-    });
+      expect(req.cookies.get(SESSION_COOKIE_NAME)).toBe(VALID_SESSION_DATA.token);
+      expect(req.cookies.get(VITE_SESSION_COOKIE_DATA_NAME)).toBe(
+        JSON.stringify(VALID_SESSION_DATA.user)
+      );
 
-    it('attaches cookie to response headers when req.cookies is not present', () => {
-      const req = makeBunRequest('http://localhost:3001/auth/login');
-      const res = Response.json({ ok: true });
-
-      const updatedResponse = attachSessionCookie(req, res, 'token-123');
-
-      expect(updatedResponse.headers.get('Set-Cookie')).toContain('kana-session=token-123');
+      const setCookie = updatedResponse.headers.get('Set-Cookie');
+      expect(setCookie).toContain(`${SESSION_COOKIE_NAME}=${VALID_SESSION_DATA.token}`);
+      expect(setCookie).toContain(
+        `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(VALID_SESSION_DATA.user))}`
+      );
     });
   });
 });

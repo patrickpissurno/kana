@@ -7,7 +7,6 @@ import { login } from '~/endpoints/auth/login';
 import type { Route } from './+types/route';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { setStoredUser } from '../../helpers/user-storage';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,7 +25,6 @@ export default function Page({}: Route.ComponentProps) {
 
   useEffect(() => {
     if (actionData?.data) {
-      setStoredUser(actionData.data);
       const maybePromise = navigate('/profile', { replace: true });
       if (maybePromise) {
         maybePromise.catch(() => undefined);

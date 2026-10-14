@@ -1,6 +1,7 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { clearStoredUser, getStoredUser, setStoredUser, USER_STORAGE_KEY } from './user-storage';
+import { VITE_SESSION_COOKIE_DATA_NAME } from './config';
+import { getStoredUser } from './user-storage';
 
 const VALID_USER: User = {
   email: 'test@example.com',
@@ -8,56 +9,61 @@ const VALID_USER: User = {
   expires_at: '2026-10-14T00:00:00.000Z',
 };
 
+function clearCookies() {
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const eqPos = cookie.indexOf('=');
+    const name = eqPos > -1 ? cookie.slice(0, eqPos).trim() : cookie.trim();
+    if (name) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    }
+  }
+}
+
 describe('user-storage', () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearCookies();
   });
 
   afterEach(() => {
-    localStorage.clear();
+    clearCookies();
   });
 
   describe('getStoredUser', () => {
-    it('returns null when storage item does not exist', () => {
+    it('returns null when cookies are empty', () => {
       expect(getStoredUser()).toBeNull();
     });
 
-    it('returns null when storage item contains malformed JSON', () => {
-      localStorage.setItem(USER_STORAGE_KEY, 'not-valid-json{');
+    it('returns null when required cookie is not present', () => {
+      document.cookie = 'other_cookie=value; Path=/';
       expect(getStoredUser()).toBeNull();
     });
 
-    it('returns null when storage item fails schema validation', () => {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({ invalid: true }));
+    it('returns null when cookie contains malformed URI encoding', () => {
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=%E0%A4%A; Path=/`;
       expect(getStoredUser()).toBeNull();
     });
 
-    it('returns valid user when storage item matches schema', () => {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(VALID_USER));
+    it('returns null when cookie contains malformed JSON', () => {
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=not-valid-json{; Path=/`;
+      expect(getStoredUser()).toBeNull();
+    });
+
+    it('returns null when cookie fails schema validation', () => {
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify({ invalid: true }))}; Path=/`;
+      expect(getStoredUser()).toBeNull();
+    });
+
+    it('returns valid user when cookie matches schema', () => {
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(VALID_USER))}; Path=/`;
       expect(getStoredUser()).toEqual(VALID_USER);
     });
-  });
 
-  describe('setStoredUser', () => {
-    it('serializes and stores valid user in localStorage', () => {
-      setStoredUser(VALID_USER);
-      expect(localStorage.getItem(USER_STORAGE_KEY)).toBe(JSON.stringify(VALID_USER));
-    });
-
-    it('throws error when user object does not match schema', () => {
-      expect(() => {
-        setStoredUser({ email: 'invalid-email', name: 'Test' });
-      }).toThrow();
-    });
-  });
-
-  describe('clearStoredUser', () => {
-    it('removes user item from localStorage', () => {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(VALID_USER));
-      expect(localStorage.getItem(USER_STORAGE_KEY)).not.toBeNull();
-
-      clearStoredUser();
-      expect(localStorage.getItem(USER_STORAGE_KEY)).toBeNull();
+    it('finds and parses user cookie when multiple cookies are present', () => {
+      document.cookie = 'theme=dark; Path=/';
+      document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(VALID_USER))}; Path=/`;
+      document.cookie = 'analytics=enabled; Path=/';
+      expect(getStoredUser()).toEqual(VALID_USER);
     });
   });
 });

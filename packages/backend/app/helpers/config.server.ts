@@ -23,6 +23,7 @@ export const schema = z.object({
   SESSION_SECRET_SALT: z.string().trim().min(MIN_SECRET_SALT_LENGTH),
   SESSION_COOKIE_DOMAIN: hostSchema,
   SESSION_COOKIE_NAME: z.string().trim().min(1),
+  VITE_SESSION_COOKIE_DATA_NAME: z.string().trim().min(1),
   CORS_VALID_ORIGINS: z
     .string()
     .transform((value) =>
@@ -39,5 +40,6 @@ export const {
   SESSION_SECRET_SALT,
   SESSION_COOKIE_DOMAIN,
   SESSION_COOKIE_NAME,
+  VITE_SESSION_COOKIE_DATA_NAME,
   CORS_VALID_ORIGINS,
 } = schema.parse(process.env);

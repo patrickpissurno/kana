@@ -105,7 +105,14 @@ describe('authRoutes', () => {
         },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
-      expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);
+      expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, {
+        token: result.data.token,
+        user: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
+      });
     });
   });
 
@@ -184,7 +191,14 @@ describe('authRoutes', () => {
         },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
-      expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);
+      expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, {
+        token: result.data.token,
+        user: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
+      });
     });
   });
 });

@@ -48,18 +48,12 @@ vi.mock('~/endpoints/auth/login', () => ({
   login: vi.fn(),
 }));
 
-const mockSetStoredUser = vi.fn();
-vi.mock('../../helpers/user-storage', () => ({
-  setStoredUser: (user: unknown) => mockSetStoredUser(user),
-}));
-
 describe('Sign In Route', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockActionData = null;
     mockIsSubmitting = false;
     mockNavigate.mockReset();
-    mockSetStoredUser.mockReset();
   });
 
   describe('meta', () => {
@@ -129,13 +123,12 @@ describe('Sign In Route', () => {
       expect(alert).toHaveTextContent('Invalid email or password');
     });
 
-    it('persists user and navigates to /profile with replace upon success actionData', () => {
+    it('navigates to /profile with replace upon success actionData', () => {
       mockActionData = { data: MOCK_USER };
       mockNavigate.mockReturnValue(undefined);
 
       renderRoute();
 
-      expect(mockSetStoredUser).toHaveBeenCalledWith(MOCK_USER);
       expect(mockNavigate).toHaveBeenCalledWith('/profile', { replace: true });
     });
 
@@ -147,7 +140,6 @@ describe('Sign In Route', () => {
 
       renderRoute();
 
-      expect(mockSetStoredUser).toHaveBeenCalledWith(MOCK_USER);
       expect(mockNavigate).toHaveBeenCalledWith('/profile', { replace: true });
 
       await expect(rejectingPromise).rejects.toThrow('Navigation cancelled');

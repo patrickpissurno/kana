@@ -34,7 +34,14 @@ export const authRoutes = defineRoutes({
         { status: HTTP_CREATED }
       );
 
-      attachSessionCookie(req, res, result.data.token);
+      attachSessionCookie(req, res, {
+        token: result.data.token,
+        user: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
+      });
 
       return res;
     },
@@ -66,7 +73,14 @@ export const authRoutes = defineRoutes({
         { status: HTTP_CREATED }
       );
 
-      attachSessionCookie(req, res, result.data.token);
+      attachSessionCookie(req, res, {
+        token: result.data.token,
+        user: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
+      });
 
       return res;
     },

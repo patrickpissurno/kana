@@ -1,16 +1,28 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import { userSchema } from '@kana/helpers/auth/schemas';
 import { safeJSONParse } from '@kana/helpers/utils/safe-json-parse';
-
-export const USER_STORAGE_KEY = 'user';
+import { VITE_SESSION_COOKIE_DATA_NAME } from './config';
 
 export function getStoredUser(): User | null {
-  const raw = localStorage.getItem(USER_STORAGE_KEY);
-  if (!raw) {
+  const prefix = `${VITE_SESSION_COOKIE_DATA_NAME}=`;
+  const found = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(prefix));
+
+  if (!found) {
     return null;
   }
 
-  const parsed = safeJSONParse(raw, null);
+  const raw = found.slice(prefix.length);
+  let decoded = '';
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+
+  const parsed = safeJSONParse(decoded, null);
   if (!parsed) {
     return null;
   }
@@ -21,13 +33,4 @@ export function getStoredUser(): User | null {
   }
 
   return result.data;
-}
-
-export function setStoredUser(user: User): void {
-  const validated = userSchema.parse(user);
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(validated));
-}
-
-export function clearStoredUser(): void {
-  localStorage.removeItem(USER_STORAGE_KEY);
 }

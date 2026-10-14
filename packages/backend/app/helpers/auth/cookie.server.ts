@@ -1,13 +1,24 @@
+import type { User } from '@kana/helpers/auth/schemas';
 import type { BunRequest } from 'bun';
 import { Cookie } from 'bun';
-import { SESSION_COOKIE_DOMAIN, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from '../config.server';
+import {
+  SESSION_COOKIE_DOMAIN,
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_SECONDS,
+  VITE_SESSION_COOKIE_DATA_NAME,
+} from '../config.server';
+
+export type SessionCookieData = {
+  token: string;
+  user: User;
+};
 
 export function getSessionCookie(req: BunRequest) {
   return req.cookies.get(SESSION_COOKIE_NAME) ?? undefined;
 }
 
-export function createSessionCookie(token: string) {
-  return new Cookie(SESSION_COOKIE_NAME, token, {
+export function createSessionCookie(data: SessionCookieData): [Cookie, Cookie] {
+  const sessionCookie = new Cookie(SESSION_COOKIE_NAME, data.token, {
     path: '/',
     httpOnly: true,
     secure: true,
@@ -15,11 +26,24 @@ export function createSessionCookie(token: string) {
     maxAge: SESSION_TTL_SECONDS,
     domain: SESSION_COOKIE_DOMAIN,
   });
+
+  const sessionDataCookie = new Cookie(VITE_SESSION_COOKIE_DATA_NAME, JSON.stringify(data.user), {
+    path: '/',
+    httpOnly: false,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: SESSION_TTL_SECONDS,
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+
+  return [sessionCookie, sessionDataCookie];
 }
 
-export function attachSessionCookie(req: BunRequest, res: Response, token: string) {
-  const cookie = createSessionCookie(token);
-  req.cookies.set(cookie);
-  res.headers.append('Set-Cookie', cookie.serialize());
+export function attachSessionCookie(req: BunRequest, res: Response, data: SessionCookieData) {
+  const [sessionCookie, sessionDataCookie] = createSessionCookie(data);
+  req.cookies.set(sessionCookie);
+  req.cookies.set(sessionDataCookie);
+  res.headers.append('Set-Cookie', sessionCookie.serialize());
+  res.headers.append('Set-Cookie', sessionDataCookie.serialize());
   return res;
 }

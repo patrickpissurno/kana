@@ -33,6 +33,7 @@ describe('config.server', () => {
       SESSION_SECRET_SALT: ` ${'b'.repeat(MIN_SECRET_SALT_LENGTH)} `,
       SESSION_COOKIE_DOMAIN: ' localhost ',
       SESSION_COOKIE_NAME: ' session ',
+      VITE_SESSION_COOKIE_DATA_NAME: ' session-data ',
       CORS_VALID_ORIGINS: ' http://localhost:3000, https://example.com ',
     };
 
@@ -41,6 +42,7 @@ describe('config.server', () => {
       SESSION_SECRET_SALT: 'b'.repeat(MIN_SECRET_SALT_LENGTH),
       SESSION_COOKIE_DOMAIN: 'localhost',
       SESSION_COOKIE_NAME: 'session',
+      VITE_SESSION_COOKIE_DATA_NAME: 'session-data',
       CORS_VALID_ORIGINS: ['http://localhost:3000', 'https://example.com'],
     };
 

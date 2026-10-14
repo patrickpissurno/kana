@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import type { Route } from './+types/route';
+import { VITE_SESSION_COOKIE_DATA_NAME } from '../../helpers/config';
 import Page, { clientLoader, getInitials, HydrateFallback, meta } from './route';
 
 const EXPECTED_META_COUNT = 2;
@@ -15,20 +16,20 @@ describe('Profile Route', () => {
   });
 
   it('provides default loader data with null user when storage is empty', () => {
-    localStorage.clear();
+    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     const data = clientLoader();
     expect(data).toEqual({ user: null });
   });
 
-  it('provides loader data with user when stored in localStorage', () => {
+  it('provides loader data with user when stored in cookie', () => {
     const mockUser = {
       name: 'Ken',
       email: 'ken@example.com',
     };
-    localStorage.setItem('user', JSON.stringify(mockUser));
+    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(mockUser))}; Path=/`;
     const data = clientLoader();
     expect(data).toEqual({ user: mockUser });
-    localStorage.clear();
+    document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
   });
 
   it('renders HydrateFallback with loading spinner', () => {
