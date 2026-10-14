@@ -1,3 +1,4 @@
+import { originSchema } from '@kana/helpers/schemas/origin';
 import { z } from 'zod';
 
 const MIN_SECRET_LENGTH = 32;
@@ -15,12 +16,6 @@ const hostSchema = z
   .string()
   .trim()
   .regex(/^[a-zA-Z0-9][a-zA-Z0-9-.]*(:[0-9]+)?$/)
-  .min(1);
-
-const originSchema = z
-  .string()
-  .trim()
-  .regex(/^(http|https):\/\/[a-zA-Z0-9][a-zA-Z0-9-.]*(:[0-9]+)?$/)
   .min(1);
 
 export const schema = z.object({

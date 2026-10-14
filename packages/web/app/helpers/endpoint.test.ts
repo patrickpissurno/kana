@@ -1,7 +1,7 @@
 import type { FetchResponse } from '@kana/helpers/utils/safe-fetch';
 import { safeFetch } from '@kana/helpers/utils/safe-fetch';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { endpoint } from './endpoint.server';
+import { endpoint } from './endpoint';
 
 vi.mock('@kana/helpers/utils/safe-fetch', () => ({
   safeFetch: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('@kana/helpers/utils/safe-fetch', () => ({
 
 const STATUS_OK = 200;
 
-describe('endpoint.server', () => {
+describe('endpoint', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });

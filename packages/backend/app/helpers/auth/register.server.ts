@@ -1,6 +1,6 @@
 import type { RegisterPayload } from '@kana/helpers/auth/schemas';
+import type { ServerResponse } from '@kana/helpers/types';
 import { password } from 'bun';
-import type { ServerError } from '../make-error.server';
 import { SESSION_TTL_SECONDS } from '../config.server';
 import { db } from '../db.server';
 import { createToken } from './create-token.server';
@@ -16,19 +16,11 @@ export type UserRecord = {
   readonly name: string;
 };
 
-export type AuthResult =
-  | {
-      readonly data: {
-        readonly user: UserRecord;
-        readonly token: string;
-        readonly expires_at: string;
-      };
-      readonly error?: undefined;
-    }
-  | {
-      readonly data?: undefined;
-      readonly error: ServerError;
-    };
+export type AuthResult = ServerResponse<{
+  readonly user: UserRecord;
+  readonly token: string;
+  readonly expires_at: string;
+}>;
 
 export async function register(data: RegisterPayload): Promise<AuthResult> {
   const passwordHash = await password.hash(data.password);
@@ -69,11 +61,11 @@ export async function register(data: RegisterPayload): Promise<AuthResult> {
       (('code' in error && error.code === PG_ERR_UNIQUE_VIOLATION) ||
         ('errno' in error && error.errno === PG_ERR_UNIQUE_VIOLATION))
     ) {
-      return { error: { fieldErrors: { email: 'This email is already registered' } } };
+      return { fieldErrors: { email: 'This email is already registered' } };
     }
 
     return {
-      error: { nonFieldError: 'An unknown error occured' },
+      nonFieldError: 'An unknown error occured',
     };
   }
 }

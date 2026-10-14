@@ -18,8 +18,8 @@ export const authRoutes = defineRoutes({
 
       const result = await register(form.data);
 
-      if (result.error) {
-        return makeError(result.error);
+      if (!result.data) {
+        return makeError(result);
       }
 
       const res = Response.json(
@@ -48,8 +48,8 @@ export const authRoutes = defineRoutes({
 
       const result = await login({ data: form.data, refreshToken });
 
-      if (result.error) {
-        return makeError(result.error);
+      if (!result.data) {
+        return makeError(result);
       }
 
       const res = Response.json(

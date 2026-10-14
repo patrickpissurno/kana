@@ -32,14 +32,14 @@ export async function login({ data, refreshToken }: LoginProps): Promise<AuthRes
     const foundUser = rows[0];
     if (!foundUser) {
       return {
-        error: { nonFieldError: INVALID_CREDENTIALS_ERROR },
+        nonFieldError: INVALID_CREDENTIALS_ERROR,
       };
     }
 
     const isMatch = await password.verify(data.password, foundUser.password_hash);
     if (!isMatch) {
       return {
-        error: { nonFieldError: INVALID_CREDENTIALS_ERROR },
+        nonFieldError: INVALID_CREDENTIALS_ERROR,
       };
     }
 
@@ -51,14 +51,14 @@ export async function login({ data, refreshToken }: LoginProps): Promise<AuthRes
   } else {
     if (!refreshToken) {
       return {
-        error: { nonFieldError: INVALID_CREDENTIALS_ERROR },
+        nonFieldError: INVALID_CREDENTIALS_ERROR,
       };
     }
 
     const tokenData = await validateToken(refreshToken);
     if (!tokenData) {
       return {
-        error: { nonFieldError: INVALID_CREDENTIALS_ERROR },
+        nonFieldError: INVALID_CREDENTIALS_ERROR,
       };
     }
 
@@ -70,7 +70,7 @@ export async function login({ data, refreshToken }: LoginProps): Promise<AuthRes
     const foundUser = rows[0];
     if (!foundUser) {
       return {
-        error: { nonFieldError: INVALID_CREDENTIALS_ERROR },
+        nonFieldError: INVALID_CREDENTIALS_ERROR,
       };
     }
 

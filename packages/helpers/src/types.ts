@@ -45,3 +45,24 @@ export type UnexpectedErrorStatusCode =
   | 510
   | 511;
 export type SuccessStatusCode = 200 | 201 | 204 | 205 | 206 | 207 | 208 | 226;
+
+export type FieldErrors = {
+  [key: string]: string;
+};
+
+export type ServerError = {
+  fieldErrors?: FieldErrors;
+  nonFieldError?: string;
+};
+
+export type ServerResponse<T = unknown> =
+  | {
+      readonly data: T;
+      readonly fieldErrors?: undefined;
+      readonly nonFieldError?: undefined;
+    }
+  | {
+      readonly data?: undefined;
+      readonly fieldErrors?: FieldErrors;
+      readonly nonFieldError?: string;
+    };

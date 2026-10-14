@@ -1,8 +1,9 @@
 import { loginCredentialsSchema } from '@kana/helpers/auth/schemas';
-import { Field, ValidatedForm, validationError } from '@rvf/react-router';
+import { Field, ValidatedForm } from '@rvf/react-router';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useActionData, useNavigate, useNavigation } from 'react-router';
+import { login } from '~/endpoints/auth/login';
 import type { Route } from './+types/route';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -16,30 +17,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
-  const formData = await request.formData();
-  const backendUrl = import.meta.env['VITE_BACKEND_URL'] ?? '';
-  const res = await fetch(`${backendUrl}/auth/login`, {
-    method: 'POST',
-    body: formData,
-    mode: 'cors',
-    credentials: 'include',
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    if (data?.error?.fieldErrors) {
-      return validationError({ fieldErrors: data.error.fieldErrors });
-    }
-    return {
-      nonFieldError: data?.error?.nonFieldError ?? 'An unexpected error occurred',
-    };
-  }
-
-  return {
-    success: true,
-    user: data,
-  };
+  return login({ formData: await request.formData() });
 }
 
 export default function Page({}: Route.ComponentProps) {
@@ -49,8 +27,8 @@ export default function Page({}: Route.ComponentProps) {
   const isSubmitting = navigation.state === 'submitting';
 
   useEffect(() => {
-    if (actionData && 'success' in actionData && actionData.success && actionData.user) {
-      setStoredUser(actionData.user);
+    if (actionData?.data) {
+      setStoredUser(actionData.data);
       const maybePromise = navigate('/profile', { replace: true });
       if (maybePromise) {
         maybePromise.catch(() => undefined);
@@ -58,8 +36,7 @@ export default function Page({}: Route.ComponentProps) {
     }
   }, [actionData, navigate]);
 
-  const nonFieldError =
-    actionData && 'nonFieldError' in actionData ? actionData.nonFieldError : null;
+  const nonFieldError = actionData?.nonFieldError;
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center">
@@ -89,6 +66,7 @@ export default function Page({}: Route.ComponentProps) {
       )}
 
       <ValidatedForm
+        noValidate
         schema={loginCredentialsSchema}
         defaultValues={{ email: '', password: '' }}
         method="post"
