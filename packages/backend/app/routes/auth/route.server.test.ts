@@ -98,9 +98,11 @@ describe('authRoutes', () => {
 
       expect(res.status).toBe(HTTP_CREATED);
       expect(await res.json()).toMatchObject({
-        email: result.data.user.email,
-        name: result.data.user.name,
-        expires_at: result.data.expires_at,
+        data: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
       expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);
@@ -175,9 +177,11 @@ describe('authRoutes', () => {
 
       expect(res.status).toBe(HTTP_CREATED);
       expect(await res.json()).toMatchObject({
-        email: result.data.user.email,
-        name: result.data.user.name,
-        expires_at: result.data.expires_at,
+        data: {
+          email: result.data.user.email,
+          name: result.data.user.name,
+          expires_at: result.data.expires_at,
+        },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
       expect(mockAttachSessionCookie).toHaveBeenCalledWith(req, res, result.data.token);

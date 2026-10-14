@@ -1,3 +1,4 @@
+import type { ServerResponse } from '@kana/helpers/types';
 import { loginSchema, registerSchema } from '@kana/helpers/auth/schemas';
 import { parseFormData } from '@rvf/react-router';
 import { attachSessionCookie, getSessionCookie } from '~/helpers/auth/cookie.server';
@@ -29,7 +30,7 @@ export const authRoutes = defineRoutes({
             name: result.data.user.name,
             expires_at: result.data.expires_at,
           },
-        },
+        } satisfies ServerResponse,
         { status: HTTP_CREATED }
       );
 
@@ -61,7 +62,7 @@ export const authRoutes = defineRoutes({
             name: result.data.user.name,
             expires_at: result.data.expires_at,
           },
-        },
+        } satisfies ServerResponse,
         { status: HTTP_CREATED }
       );
 

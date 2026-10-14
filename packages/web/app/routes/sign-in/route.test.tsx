@@ -16,7 +16,7 @@ const MOCK_USER = {
 
 const mockNavigate = vi.fn<() => void | Promise<void>>();
 let mockActionData: unknown = null;
-let mockNavigationState: 'idle' | 'submitting' | 'loading' = 'idle';
+let mockIsSubmitting = false;
 
 vi.mock('react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router')>();
@@ -24,7 +24,23 @@ vi.mock('react-router', async (importOriginal) => {
     ...actual,
     useActionData: () => mockActionData,
     useNavigate: () => mockNavigate,
-    useNavigation: () => ({ state: mockNavigationState }),
+  };
+});
+
+vi.mock('@rvf/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@rvf/react-router')>();
+  return {
+    ...actual,
+    useForm: (opts: Parameters<typeof actual.useForm>[0]) => {
+      const form = actual.useForm(opts);
+      return {
+        ...form,
+        formState: {
+          ...form.formState,
+          isSubmitting: mockIsSubmitting,
+        },
+      };
+    },
   };
 });
 
@@ -41,7 +57,7 @@ describe('Sign In Route', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockActionData = null;
-    mockNavigationState = 'idle';
+    mockIsSubmitting = false;
     mockNavigate.mockReset();
     mockSetStoredUser.mockReset();
   });
@@ -137,8 +153,8 @@ describe('Sign In Route', () => {
       await expect(rejectingPromise).rejects.toThrow('Navigation cancelled');
     });
 
-    it('renders submitting loader state when navigation is submitting', () => {
-      mockNavigationState = 'submitting';
+    it('renders submitting loader state when form is submitting', () => {
+      mockIsSubmitting = true;
       renderRoute();
 
       const submitButton = screen.getByRole('button');
