@@ -56,7 +56,7 @@ When working on @kana/helpers, the commands are:
 - `bun --filter @kana/helpers test`
 
 Gotchas:
-- Never run just `bun test`, as it will try to use the bun test runner instead of vitest
+- Never run just `bun test`, as it will try to use the bun test runner instead of vitest. Never run just `bun -e`, use `bun --no-env-file -e` instead. Also, no `node` or `npx` commands, stick to `bun` instead.
 
 ## Architecture & Quirks:
 - **Database Schema Truth:** The `database.dump` file represents the DB schema. If you suspect it might be outdated, run `bun run db:dump` to refresh it locally rather than relying on live DB queries for inspection. It's good practice to run it once per session if you're doing any DB sensitive work
