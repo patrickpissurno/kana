@@ -1,15 +1,20 @@
 import type { BunRequest } from 'bun';
-import { z, ZodType } from 'zod';
-import { HTTP_UNSUPPORTED_MEDIA_TYPE } from './http-status.server';
+import type { ZodType } from 'zod';
+import { safeJSONParse } from '@kana/helpers/utils/safe-json-parse';
+import { z } from 'zod';
 
-const UNSUPPORTED_MEDIA_TYPE_RESPONSE = new Response(null, { status: HTTP_UNSUPPORTED_MEDIA_TYPE });
+export const INVALID_JSON_ERROR = 'Invalid JSON';
 
 export async function parseJSONData<T extends ZodType>(req: BunRequest, schema: T) {
-  let json: unknown = undefined;
-  try {
-    json = await req.json();
-  } catch {
-    throw UNSUPPORTED_MEDIA_TYPE_RESPONSE.clone();
+  const text = await req.text().catch(() => '');
+  const json = safeJSONParse(text, undefined);
+
+  if (json === undefined) {
+    return {
+      data: undefined,
+      error: { fieldErrors: {} },
+      nonFieldError: INVALID_JSON_ERROR,
+    };
   }
 
   const result = schema.safeParse(json);
