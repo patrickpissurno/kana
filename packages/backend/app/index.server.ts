@@ -1,6 +1,7 @@
 import { serve } from 'bun';
 import { authRoutes } from '~/routes/auth/route.server';
 import { healthRoutes } from '~/routes/health/route.server';
+import { syncRoutes } from '~/routes/sync/route.server';
 
 const IS_DEV = import.meta.env.NODE_ENV !== 'production';
 
@@ -9,6 +10,7 @@ const server = serve({
   routes: {
     ...healthRoutes,
     ...authRoutes,
+    ...syncRoutes,
   },
 });
 
