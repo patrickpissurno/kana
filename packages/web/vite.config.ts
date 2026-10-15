@@ -57,6 +57,9 @@ export default defineConfig({
   ],
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      '@rvf/react-router': '@rvf/react-router/dist/index.esm.js',
+    },
   },
   test: {
     coverage: {
