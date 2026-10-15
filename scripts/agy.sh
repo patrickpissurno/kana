@@ -2,7 +2,7 @@
 
 # 1. Setup temporary node alias
 mkdir -p node_modules/.bin
-ln -sf "$(which bun)" node_modules/.bin/node
+cp "$(which bun)" node_modules/.bin/node
 
 # 2. Strip .nvm from the current PATH
 CLEAN_PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "^$HOME/.nvm" | paste -sd: -)
