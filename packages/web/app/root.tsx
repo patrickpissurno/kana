@@ -11,6 +11,7 @@ import type { Route } from './+types/root';
 import { PWA_ICONS } from './assets/icons';
 import { DbGate } from './components/db/db-gate';
 import { useDynamicOverscroll } from './helpers/use-dynamic-overscroll';
+import { useSyncOnLoad } from './helpers/use-sync-on-load';
 import { useWindowReactivation } from './helpers/use-window-reactivation';
 import './app.css';
 
@@ -59,6 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const activationKey = useWindowReactivation();
   useDynamicOverscroll();
+  useSyncOnLoad();
   const outletContext = useMemo(() => ({ activationKey }), [activationKey]);
 
   return (

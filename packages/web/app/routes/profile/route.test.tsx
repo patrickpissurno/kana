@@ -1,14 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { format } from 'date-fns';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { logout } from '~/endpoints/auth/logout';
 import type { Route } from './+types/route';
 import { VITE_SESSION_COOKIE_DATA_NAME } from '../../helpers/config';
+import { setLastSyncedTimestamp } from '../../helpers/sync-storage';
 import { mockActionArgs } from '../../mocks/react-router/action';
 import Page, { clientAction, clientLoader, getInitials, HydrateFallback, meta } from './route';
 
 const EXPECTED_META_COUNT = 2;
+const TEST_TIMESTAMP = 1700000000000;
 
 let mockActionData: unknown = null;
 let mockNavigationState: 'idle' | 'submitting' | 'loading' = 'idle';
@@ -37,6 +40,7 @@ vi.mock('~/endpoints/auth/logout', () => ({
 
 describe('Profile Route', () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.restoreAllMocks();
     mockActionData = null;
     mockNavigationState = 'idle';
@@ -65,20 +69,21 @@ describe('Profile Route', () => {
   });
 
   describe('clientLoader', () => {
-    it('provides default loader data with null user when storage is empty', () => {
+    it('provides default loader data with null user and null timestamp when storage is empty', () => {
       document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       const data = clientLoader();
-      expect(data).toEqual({ user: null });
+      expect(data).toEqual({ user: null, lastSyncTimestamp: null });
     });
 
-    it('provides loader data with user when stored in cookie', () => {
+    it('provides loader data with user and timestamp when stored in cookie and localStorage', () => {
       const mockUser = {
         name: 'Ken',
         email: 'ken@example.com',
       };
+      setLastSyncedTimestamp(TEST_TIMESTAMP);
       document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=${encodeURIComponent(JSON.stringify(mockUser))}; Path=/`;
       const data = clientLoader();
-      expect(data).toEqual({ user: mockUser });
+      expect(data).toEqual({ user: mockUser, lastSyncTimestamp: TEST_TIMESTAMP });
       document.cookie = `${VITE_SESSION_COOKIE_DATA_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     });
   });
@@ -103,7 +108,7 @@ describe('Profile Route', () => {
 
   describe('Page', () => {
     it('renders logged out state when user is null', () => {
-      renderRoute({ user: null });
+      renderRoute({ user: null, lastSyncTimestamp: null });
 
       const backLink = screen.getByRole('link', { name: /home/i });
       expect(backLink).toBeInTheDocument();
@@ -123,36 +128,42 @@ describe('Profile Route', () => {
       expect(createAccountLink).toHaveAttribute('href', '/create-account');
     });
 
-    it('renders logged in state with multi-word name and allows clicking sign out', async () => {
+    it('renders logged in state with multi-word name, formatted sync time, and allows clicking sign out', async () => {
       const user = userEvent.setup();
-      renderRoute({ user: { name: 'Alice Smith', email: 'alice@example.com' } });
+      renderRoute({
+        user: { name: 'Alice Smith', email: 'alice@example.com' },
+        lastSyncTimestamp: TEST_TIMESTAMP,
+      });
 
       expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/');
       expect(screen.getByRole('heading', { level: 1, name: 'Alice Smith' })).toBeInTheDocument();
       expect(screen.getByText('AS')).toBeInTheDocument();
-      expect(screen.getByText(/last sync: sep 13th, 2026 14:20:00/i)).toBeInTheDocument();
+
+      const expectedDateStr = format(new Date(TEST_TIMESTAMP), 'MMM do, yyyy HH:mm:ss');
+      expect(screen.getByText(`Last sync: ${expectedDateStr}`)).toBeInTheDocument();
 
       const signOutBtn = screen.getByRole('button', { name: /sign out/i });
       expect(signOutBtn).toBeInTheDocument();
       await user.click(signOutBtn);
     });
 
-    it('renders logged in state with single-word name', () => {
-      renderRoute({ user: { name: 'Ken', email: 'ken@example.com' } });
+    it('renders logged in state with single-word name and Never when timestamp is null', () => {
+      renderRoute({ user: { name: 'Ken', email: 'ken@example.com' }, lastSyncTimestamp: null });
 
       expect(screen.getByRole('heading', { level: 1, name: 'Ken' })).toBeInTheDocument();
       expect(screen.getByText('K')).toBeInTheDocument();
+      expect(screen.getByText('Last sync: Never')).toBeInTheDocument();
     });
 
     it('renders logged in state with empty name falling back to default user icon', () => {
-      renderRoute({ user: { name: '   ', email: 'empty@example.com' } });
+      renderRoute({ user: { name: '   ', email: 'empty@example.com' }, lastSyncTimestamp: null });
 
-      expect(screen.getByText(/last sync:/i)).toBeInTheDocument();
+      expect(screen.getByText(/last sync: never/i)).toBeInTheDocument();
     });
 
     it('renders non-field error alert when actionData contains nonFieldError', () => {
       mockActionData = { nonFieldError: 'Unable to sign out at this time' };
-      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' } });
+      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' }, lastSyncTimestamp: null });
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeInTheDocument();
@@ -161,7 +172,7 @@ describe('Profile Route', () => {
 
     it('renders submitting loader state when form is submitting', () => {
       mockNavigationState = 'submitting';
-      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' } });
+      renderRoute({ user: { name: 'Alice', email: 'alice@example.com' }, lastSyncTimestamp: null });
 
       const signOutBtn = screen.getByRole('button');
       expect(signOutBtn).toBeDisabled();

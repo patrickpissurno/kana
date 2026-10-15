@@ -1,11 +1,13 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import { cn } from 'cn';
+import { format } from 'date-fns';
 import { ArrowLeft, Loader2, User as UserIcon } from 'lucide-react';
 import { Form, Link, useActionData, useNavigation } from 'react-router';
 import { logout } from '~/endpoints/auth/logout';
 import type { Route } from './+types/route';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { getLastSyncedTimestamp } from '../../helpers/sync-storage';
 import { getStoredUser } from '../../helpers/user-storage';
 
 export function meta({}: Route.MetaArgs) {
@@ -17,10 +19,14 @@ export function meta({}: Route.MetaArgs) {
 
 export type ProfileLoaderData = {
   user: User | null;
+  lastSyncTimestamp: number | null;
 };
 
 export function clientLoader(): ProfileLoaderData {
-  return { user: getStoredUser() };
+  return {
+    user: getStoredUser(),
+    lastSyncTimestamp: getLastSyncedTimestamp(),
+  };
 }
 
 export async function clientAction({}: Route.ClientActionArgs) {
@@ -55,6 +61,11 @@ export default function Page({ loaderData }: Route.ComponentProps) {
   const isSubmitting = navigation.state === 'submitting';
   const nonFieldError = actionData?.nonFieldError;
   const user = loaderData.user;
+  const lastSyncTimestamp = loaderData.lastSyncTimestamp;
+  const lastSyncText =
+    lastSyncTimestamp !== null
+      ? format(new Date(lastSyncTimestamp), 'MMM do, yyyy HH:mm:ss')
+      : 'Never';
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center">
@@ -87,7 +98,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
 
             <div className="flex flex-col items-center gap-1">
               <h1 className="text-foreground text-2xl font-bold tracking-tight">{user.name}</h1>
-              <p className="text-muted-foreground text-xs">Last sync: Sep 13th, 2026 14:20:00</p>
+              <p className="text-muted-foreground text-xs">Last sync: {lastSyncText}</p>
             </div>
 
             <Form method="post" className="w-full pt-2">
