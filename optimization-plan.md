@@ -6,12 +6,14 @@ Refactor the full-stack synchronization system across `@kana/helpers`, `backend`
 Key improvements:
 1. **Columnar Wire Protocol & Zero-Allocation Serialization**: Replace array-of-objects with columnar arrays (`timestamps: int8[]`, `glyphs: text[]`, `results: int2[]`). On the backend, use `sql.array` with `unnest()` and build missing-event JSON directly inside PostgreSQL (`json_build_object`), returning the raw payload directly to HTTP responses without allocating JavaScript intermediate objects.
 2. **Roaring Bitmap Device Tracking & Piggybacked Cardinality**: Track each device's synced events using `roaringbitmap` in `quiz_events_devices_cache`. Piggyback cardinality calculation onto the Device Cache Upsert query via `RETURNING rb_cardinality(synced_events) AS current_cache_count`. Skip the missing events query completely whenever `current_cache_count >= last_event_id`.
-3. **Optimized Conflict Resolution & Collation Match**: Change `result` from string (`'correct' | 'wrong' | 'skipped'`) to `int2` (`CORRECT = 3`, `WRONG = 2`, `SKIPPED = 1`). Implement zero-allocation UTF-8 byte-order collation comparison (`compareCollateC`) in TypeScript to identically match PostgreSQL's `COLLATE "C"`.
-4. **Device ID Lifecycle**: Support optional `device_id` during register and login. Set a permanent, HTTP-only, secure cookie with `device_id` (trusted over localStorage), embed `device_id` in encrypted session tokens, and persist it to `localStorage` as client fallback. Logout never clears `device_id`. All UUIDv7s are generated using Bun's native `randomUUIDv7()` from `'bun'`.
-5. **Strict User ID Isolation**: Internal `int4` user ID is strictly private to the server (never returned or exposed to the client). Sessions securely seal it in encrypted cookies.
-6. **IndexedDB v3 Migration & Storage Persistence**: Migrate IndexedDB `kana_db` to version 3, converting existing string results to integers. Call `navigator.storage.persist()` on DB initialization to prevent browser data eviction.
-7. **Background Cron Eviction**: Register an in-process daily cron (`Bun.cron("@daily", ...)`) on the backend to evict device caches inactive for more than 30 days.
-8. **100% Test Coverage Across All 4 Metrics**: Adhere to the 3-pillar testing methodology, ensuring all tests pass in isolation with 100% lines, functions, branches, and statements coverage.
+3. **Event Mutability via Sibling Cache Punching (`rb_andnot`)**: When historical events are updated via conflict resolution, return their IDs (`RETURNING e.id`) and subtract them from all other device caches owned by that user (`UPDATE quiz_events_devices_cache SET synced_events = rb_andnot(synced_events, rb_build($updated_ids)) WHERE user_id = $user_id AND device_uuid != $device_id`). This drops sibling cache counts below `last_event_id`, ensuring modified events are delivered on sibling syncs without abandoning Roaring Bitmaps.
+4. **Single-Transaction IndexedDB Batch Commit**: Eliminate per-record transactions when applying missing events on the client by executing all `store.put()` calls inside a single `readwrite` IndexedDB transaction, committing to disk exactly once.
+5. **Optimized Conflict Resolution & Collation Match**: Change `result` from string (`'correct' | 'wrong' | 'skipped'`) to `int2` (`CORRECT = 3`, `WRONG = 2`, `SKIPPED = 1`). Implement zero-allocation UTF-8 byte-order collation comparison (`compareCollateC`) in TypeScript to identically match PostgreSQL's `COLLATE "C"`.
+6. **Device ID Lifecycle**: Support optional `device_id` during register and login. Set a permanent, HTTP-only, secure cookie with `device_id` (trusted over localStorage), embed `device_id` in encrypted session tokens, and persist it to `localStorage` as client fallback. Logout never clears `device_id`. All UUIDv7s are generated using Bun's native `randomUUIDv7()` from `'bun'`.
+7. **Strict User ID Isolation**: Internal `int4` user ID is strictly private to the server (never returned or exposed to the client). Sessions securely seal it in encrypted cookies.
+8. **IndexedDB v3 Migration & Storage Persistence**: Migrate IndexedDB `kana_db` to version 3, converting existing string results to integers. Call `navigator.storage.persist()` on DB initialization to prevent browser data eviction.
+9. **Background Cron Eviction**: Register an in-process daily cron (`Bun.cron("@daily", ...)`) on the backend to evict device caches inactive for more than 30 days.
+10. **100% Test Coverage Across All 4 Metrics**: Adhere to the 3-pillar testing methodology, ensuring all tests pass in isolation with 100% lines, functions, branches, and statements coverage.
 
 ---
 
@@ -21,6 +23,8 @@ Key improvements:
 > **Key Architecture Decisions Implemented:**
 > - Synchronization payload replaces `{ items: QuizEvent[], totalItems: number }` with columnar `{ timestamps: number[], glyphs: string[], results: number[] }`.
 > - Synchronization response returns `ServerResponse<{ timestamps: number[], glyphs: string[], results: number[] }>` generated directly in PostgreSQL. When no events are missing, Bun responds immediately with empty arrays.
+> - Modified events propagate via `rb_andnot` cache punching on sibling devices.
+> - IndexedDB writes all synced events inside a single `readwrite` transaction.
 > - `DEVICE_ID_COOKIE_NAME` is loaded from environment variables (no `.default()` in schema) with a 10-year max-age (315,360,000s), `HttpOnly`, `Secure`, `SameSite=Lax`.
 > - `randomUUIDv7` from `bun` is used for all device UUID generation.
 > - Internal `int4` user ID is strictly concealed from the client.
@@ -32,24 +36,28 @@ Key improvements:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Client (Web SPA)
+    actor User as Syncing Device (A)
     participant IDB as IndexedDB (kana_db v3)
     participant BE as Bun Backend Server
-    participant PG as PostgreSQL (with RoaringBitmap)
+    participant PG as PostgreSQL (RoaringBitmap)
+    actor Sibling as Sibling Device (B)
 
     Note over User,IDB: Storage Persisted (navigator.storage.persist())
-    User->>IDB: Load events newer than lastSyncedTimestamp
     User->>BE: POST /sync/quiz-events (columnar: timestamps, glyphs, results)
     Note over BE: Authenticate session (user_id: int4, device_id: uuid)
     
     alt If incoming batch has events (timestamps.length > 0)
         BE->>PG: Pre-flight CTE Insert (Anti-join & sequential IDs via quiz_events_counters) -> returns inserted IDs & last_event_id
-        BE->>PG: Conflict Resolution CTE (UTF-8 byte collation & result int2 score)
+        BE->>PG: Conflict Resolution CTE (UTF-8 collation & int2 score) RETURNING e.id (updated IDs)
+        opt If historical events were updated
+            BE->>PG: Punch hole in sibling caches: rb_andnot(synced_events, rb_build(updated_ids)) WHERE device_uuid != A
+            Note over PG,Sibling: Sibling (B) bitmap cardinality drops (< last_event_id)
+        end
     else If incoming batch is empty
         BE->>PG: Read last_event_id FROM quiz_events_counters
     end
     
-    BE->>PG: Upsert device cache bitmap (rb_or with inserted IDs) RETURNING rb_cardinality(synced_events) AS current_cache_count
+    BE->>PG: Upsert device A cache bitmap (rb_or with inserted IDs) RETURNING rb_cardinality(synced_events) AS current_cache_count
     
     alt All events already synced (current_cache_count >= last_event_id)
         BE-->>User: 200 OK { data: { timestamps: [], glyphs: [], results: [] } }
@@ -59,7 +67,7 @@ sequenceDiagram
         BE-->>User: 200 OK (raw payload streamed directly, zero Bun allocations)
     end
     
-    User->>IDB: Single-pass iteration to upsert missing events into IndexedDB
+    User->>IDB: Batch upsert missing events within a SINGLE readwrite transaction (single disk commit)
     User->>User: Update lastSyncedTimestamp in localStorage
 ```
 
@@ -145,9 +153,33 @@ sequenceDiagram
      - Capture `last_event_id` and `insertedIds`.
   2. **If `data.timestamps.length === 0`**:
      - Retrieve `last_event_id` via `SELECT last_event_id FROM quiz_events_counters WHERE user_id = ${user_id}`.
-  3. **Conflict Resolution CTE (when `data.timestamps.length > 0`)**:
-     - Update `quiz_events` where `user_id = $4 AND timestamp = incoming.timestamp` if incoming glyph wins byte comparison (`i.glyph > e.glyph`) or score wins (`i.glyph = e.glyph AND i.result > e.result`).
-  4. **Device Cache Upsert with Piggybacked Cardinality**:
+  3. **Conflict Resolution CTE with `RETURNING e.id` (when `data.timestamps.length > 0`)**:
+     ```sql
+     WITH incoming AS (
+       SELECT * FROM unnest(
+         ${tx.array(data.timestamps, 'int8')},
+         ${tx.array(data.glyphs, 'text')},
+         ${tx.array(data.results, 'int2')}
+       ) AS i(timestamp, glyph, result)
+     )
+     UPDATE quiz_events e
+     SET 
+       glyph = i.glyph,
+       result = i.result
+     FROM incoming i
+     WHERE e.user_id = ${user_id}
+       AND e.timestamp = i.timestamp
+       AND (i.glyph > e.glyph OR (i.glyph = e.glyph AND i.result > e.result))
+     RETURNING e.id;
+     ```
+  4. **Sibling Cache Eviction (`rb_andnot`)**:
+     - If `updatedRows.length > 0`:
+       ```sql
+       UPDATE quiz_events_devices_cache
+       SET synced_events = rb_andnot(synced_events, rb_build(${tx.array(updatedIds, 'int4')}))
+       WHERE user_id = ${user_id} AND device_uuid != ${device_id};
+       ```
+  5. **Device Cache Upsert with Piggybacked Cardinality**:
      ```sql
      INSERT INTO quiz_events_devices_cache (device_uuid, user_id, last_synced_at, synced_events)
      VALUES (${device_id}, ${user_id}, CURRENT_DATE, rb_build(${tx.array(insertedIds, 'int4')}))
@@ -157,9 +189,9 @@ sequenceDiagram
          last_synced_at = CURRENT_DATE
      RETURNING rb_cardinality(synced_events) AS current_cache_count;
      ```
-  5. **Fast Cardinality Check**:
+  6. **Fast Cardinality Check**:
      - If `current_cache_count >= last_event_id`: no events are missing! Return `{ rawPayload: null }`.
-  6. **Direct SQL JSON Generation**:
+  7. **Direct SQL JSON Generation**:
      - If `current_cache_count < last_event_id`: execute the CTE that filters `NOT rb_contains(synced_events, id)`, updates the cache bitmap with `rb_build_agg(id)`, and aggregates directly to `{ data: { timestamps: [...], glyphs: [...], results: [...] } }::text AS payload`.
      - Return `{ rawPayload: payload }`.
 
@@ -216,7 +248,24 @@ sequenceDiagram
 - Construct columnar arrays using a single loop:
   `const timestamps: number[] = []; const glyphs: string[] = []; const results: number[] = [];`
 - Call `syncQuizEvents({ timestamps, glyphs, results })`.
-- Single-pass iterate over response columnar arrays (`timestamps`, `glyphs`, `results`) to upsert missing events into IndexedDB.
+- Single-pass iterate over response columnar arrays (`timestamps`, `glyphs`, `results`) to batch upsert missing events into IndexedDB inside a **single `readwrite` transaction**:
+  ```ts
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE_NAME], 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('Failed to upsert missing events'));
+    tx.onabort = () => reject(tx.error ?? new Error('Transaction aborted'));
+
+    for (let i = 0; i < missing.timestamps.length; i++) {
+      store.put({
+        timestamp: missing.timestamps[i]!,
+        glyph: missing.glyphs[i]!,
+        result: missing.results[i]!,
+      });
+    }
+  });
+  ```
 - Update `lastSyncedTimestamp`.
 
 #### [MODIFY] [`packages/web/app/helpers/append-quiz-event.ts`](file:///Users/patrick/Documents/GitHub/kana/packages/web/app/helpers/append-quiz-event.ts)
@@ -246,7 +295,7 @@ sequenceDiagram
    - `bun --filter backend check` (Static checks: typecheck, oxfmt, oxlint).
    - `bun --filter backend test app/helpers/auth/login.server.db.test.ts`
    - `bun --filter backend test app/helpers/auth/register.server.db.test.ts`
-   - `bun --filter backend test app/helpers/sync/quiz-events.server.db.test.ts`
+   - `bun --filter backend test app/helpers/sync/quiz-events.server.db.test.ts` (Includes multi-device sync with sibling cache eviction verification).
    - `bun --filter backend test app/helpers/cron.server.test.ts`
    - `bun --filter backend test` (All backend tests passing with 100% coverage).
 3. **Web Frontend Tests**:
@@ -258,7 +307,9 @@ sequenceDiagram
 
 ### Manual Verification
 - Verify that device ID cookie is set on login/register and remains intact after logout.
-- Verify sync operation between two devices:
-  - Device 1 performs quizzes and syncs.
-  - Device 2 logs in with the same account and receives all events from Device 1 in columnar format.
-  - Subsequent sync from Device 2 with no new local events receives empty missing arrays and does not re-fetch historical data.
+- Multi-device sync scenario:
+  - Device 1 performs quiz (results initially skipped, then updated to correct) and syncs.
+  - Device 2 syncs: receives all events.
+  - Device 1 modifies historical event (e.g. from wrong to correct) and syncs.
+  - Device 2 syncs again: receives updated event via sibling hole punching (`rb_andnot`).
+  - Subsequent sync with no modifications receives empty missing arrays.
