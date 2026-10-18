@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { QuizEvent } from '../types/quiz';
 import { syncQuizEvents } from '../endpoints/sync/quiz-events';
+import { QUIZ_RESULT } from '../types/quiz';
 import { appendQuizEvent } from './append-quiz-event';
 import { getDb } from './get-db';
 import { loadAllQuizEvents } from './load-all-quiz-events';
-import { performQuizEventsSync, SYNC_MISMATCH_ERROR_PREFIX } from './sync-quiz-events';
+import { performQuizEventsSync } from './sync-quiz-events';
 import {
   getLastSyncedTimestamp,
   LAST_EVENT_SYNCED_TIMESTAMP_KEY,
@@ -20,9 +20,7 @@ const mockSyncQuizEvents = vi.mocked(syncQuizEvents);
 const TIMESTAMP_1 = 1700000001000;
 const TIMESTAMP_2 = 1700000002000;
 const TIMESTAMP_3 = 1700000003000;
-const EXPECTED_INITIAL_EVENTS_COUNT = 2;
 const EXPECTED_UPSERTED_EVENTS_COUNT = 2;
-const SERVER_COUNT_MISMATCH = 5;
 
 describe('sync-quiz-events', () => {
   beforeEach(() => {
@@ -37,22 +35,24 @@ describe('sync-quiz-events', () => {
   it('handles empty local events without setting timestamp when maxTimestamp is zero', async () => {
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: [],
-        totalItems: 0,
+        timestamps: [],
+        glyphs: [],
+        results: [],
       },
     });
 
     await performQuizEventsSync();
 
     expect(mockSyncQuizEvents).toHaveBeenCalledWith({
-      items: [],
-      totalItems: 0,
+      timestamps: [],
+      glyphs: [],
+      results: [],
     });
     expect(getLastSyncedTimestamp()).toBeNull();
   });
 
   it('performs clean initial sync and saves max event timestamp', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(TIMESTAMP_1);
     await appendQuizEvent('あ');
     vi.setSystemTime(TIMESTAMP_2);
@@ -61,26 +61,25 @@ describe('sync-quiz-events', () => {
 
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: [],
-        totalItems: EXPECTED_INITIAL_EVENTS_COUNT,
+        timestamps: [],
+        glyphs: [],
+        results: [],
       },
     });
 
     await performQuizEventsSync();
 
     expect(mockSyncQuizEvents).toHaveBeenCalledWith({
-      items: [
-        { glyph: 'あ', timestamp: TIMESTAMP_1, result: 'skipped' },
-        { glyph: 'い', timestamp: TIMESTAMP_2, result: 'skipped' },
-      ],
-      totalItems: EXPECTED_INITIAL_EVENTS_COUNT,
+      timestamps: [TIMESTAMP_1, TIMESTAMP_2],
+      glyphs: ['あ', 'い'],
+      results: [QUIZ_RESULT.SKIPPED, QUIZ_RESULT.SKIPPED],
     });
 
     expect(getLastSyncedTimestamp()).toBe(TIMESTAMP_2);
   });
 
   it('only queries events after lastSyncedTimestamp on subsequent sync', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(TIMESTAMP_1);
     await appendQuizEvent('あ');
     vi.setSystemTime(TIMESTAMP_2);
@@ -91,36 +90,33 @@ describe('sync-quiz-events', () => {
 
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: [],
-        totalItems: EXPECTED_INITIAL_EVENTS_COUNT,
+        timestamps: [],
+        glyphs: [],
+        results: [],
       },
     });
 
     await performQuizEventsSync();
 
     expect(mockSyncQuizEvents).toHaveBeenCalledWith({
-      items: [{ glyph: 'い', timestamp: TIMESTAMP_2, result: 'skipped' }],
-      totalItems: EXPECTED_INITIAL_EVENTS_COUNT,
+      timestamps: [TIMESTAMP_2],
+      glyphs: ['い'],
+      results: [QUIZ_RESULT.SKIPPED],
     });
     expect(getLastSyncedTimestamp()).toBe(TIMESTAMP_2);
   });
 
   it('upserts missing events and applies collision resolution for existing and new events', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(TIMESTAMP_1);
-    // Initial append stores result as 'skipped'
     await appendQuizEvent('あ');
     vi.useRealTimers();
 
-    const missingEvents: QuizEvent[] = [
-      { glyph: 'あ', timestamp: TIMESTAMP_1, result: 'correct' },
-      { glyph: 'う', timestamp: TIMESTAMP_3, result: 'wrong' },
-    ];
-
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: missingEvents,
-        totalItems: EXPECTED_UPSERTED_EVENTS_COUNT,
+        timestamps: [TIMESTAMP_1, TIMESTAMP_3],
+        glyphs: ['あ', 'う'],
+        results: [QUIZ_RESULT.CORRECT, QUIZ_RESULT.WRONG],
       },
     });
 
@@ -128,24 +124,30 @@ describe('sync-quiz-events', () => {
 
     const allEvents = await loadAllQuizEvents();
     expect(allEvents).toHaveLength(EXPECTED_UPSERTED_EVENTS_COUNT);
-    expect(allEvents.find((r) => r.timestamp === TIMESTAMP_1)?.result).toBe('correct');
-    expect(allEvents.find((r) => r.timestamp === TIMESTAMP_3)?.result).toBe('wrong');
+    expect(allEvents.find((r) => r.timestamp === TIMESTAMP_1)?.result).toBe(QUIZ_RESULT.CORRECT);
+    expect(allEvents.find((r) => r.timestamp === TIMESTAMP_3)?.result).toBe(QUIZ_RESULT.WRONG);
     expect(getLastSyncedTimestamp()).toBe(TIMESTAMP_3);
   });
 
-  it('logs console.error when final local count is less than server total', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('covers branches where item or missing timestamp is not greater than current max', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(TIMESTAMP_2);
+    await appendQuizEvent('い');
+    vi.setSystemTime(TIMESTAMP_1);
+    await appendQuizEvent('あ');
+    vi.useRealTimers();
 
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: [],
-        totalItems: SERVER_COUNT_MISMATCH,
+        timestamps: [TIMESTAMP_1],
+        glyphs: ['あ'],
+        results: [QUIZ_RESULT.CORRECT],
       },
     });
 
     await performQuizEventsSync();
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(SYNC_MISMATCH_ERROR_PREFIX));
+    expect(getLastSyncedTimestamp()).toBe(TIMESTAMP_2);
   });
 
   it('does nothing when response has error without data', async () => {
@@ -195,11 +197,12 @@ describe('sync-quiz-events', () => {
     await expect(performQuizEventsSync()).resolves.toBeUndefined();
   });
 
-  it('handles get error during upsert missing events silently', async () => {
+  it('handles store.put onerror during upsert missing events silently', async () => {
     mockSyncQuizEvents.mockResolvedValueOnce({
       data: {
-        missing: [{ glyph: 'あ', timestamp: TIMESTAMP_1, result: 'correct' }],
-        totalItems: 1,
+        timestamps: [TIMESTAMP_1],
+        glyphs: ['あ'],
+        results: [QUIZ_RESULT.CORRECT],
       },
     });
 
@@ -207,73 +210,19 @@ describe('sync-quiz-events', () => {
     const origTx = db.transaction.bind(db);
     vi.spyOn(db, 'transaction').mockImplementation((names, mode) => {
       if (mode === 'readwrite') {
-        const fakeStore = {
-          get: () => {
-            const req = {
-              result: undefined,
-              error: new DOMException('Get failed', 'AbortError'),
-              onsuccess: null,
-              onerror: null,
-            } as unknown as IDBRequest;
-            queueMicrotask(() => {
-              if (req.onerror) {
-                req.onerror(new Event('error'));
-              }
-            });
-            return req;
-          },
+        const fakeReq = {
+          result: undefined,
+          error: new DOMException('Put failed', 'AbortError'),
+          onsuccess: null,
+          onerror: null as ((ev: Event) => void) | null,
         };
-        return {
-          objectStore: () => fakeStore,
-        } as unknown as IDBTransaction;
-      }
-      return origTx(names, mode);
-    });
-
-    await expect(performQuizEventsSync()).resolves.toBeUndefined();
-  });
-
-  it('handles put error during upsert missing events silently', async () => {
-    mockSyncQuizEvents.mockResolvedValueOnce({
-      data: {
-        missing: [{ glyph: 'あ', timestamp: TIMESTAMP_1, result: 'correct' }],
-        totalItems: 1,
-      },
-    });
-
-    const db = await getDb();
-    const origTx = db.transaction.bind(db);
-    vi.spyOn(db, 'transaction').mockImplementation((names, mode) => {
-      if (mode === 'readwrite') {
+        queueMicrotask(() => {
+          if (fakeReq.onerror) {
+            fakeReq.onerror(new Event('error'));
+          }
+        });
         const fakeStore = {
-          get: () => {
-            const req = {
-              result: undefined,
-              error: null,
-              onsuccess: null,
-              onerror: null,
-            } as unknown as IDBRequest;
-            queueMicrotask(() => {
-              if (req.onsuccess) {
-                req.onsuccess(new Event('success'));
-              }
-            });
-            return req;
-          },
-          put: () => {
-            const req = {
-              result: undefined,
-              error: new DOMException('Put failed', 'AbortError'),
-              onsuccess: null,
-              onerror: null,
-            } as unknown as IDBRequest;
-            queueMicrotask(() => {
-              if (req.onerror) {
-                req.onerror(new Event('error'));
-              }
-            });
-            return req;
-          },
+          put: () => fakeReq,
         };
         return {
           objectStore: () => fakeStore,

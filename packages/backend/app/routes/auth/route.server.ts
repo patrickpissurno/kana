@@ -2,8 +2,10 @@ import type { ServerResponse } from '@kana/helpers/types';
 import { loginSchema, registerSchema } from '@kana/helpers/auth/schemas';
 import { parseFormData } from '@rvf/react-router';
 import {
+  attachDeviceIdCookie,
   attachSessionCookie,
   deleteSessionCookie,
+  getDeviceIdCookie,
   getSessionCookie,
 } from '~/helpers/auth/cookie.server';
 import { login } from '~/helpers/auth/login.server';
@@ -21,7 +23,8 @@ export const authRoutes = defineRoutes({
         return makeError(form);
       }
 
-      const result = await register(form.data);
+      const deviceId = getDeviceIdCookie(req) ?? form.data.device_id;
+      const result = await register(form.data, deviceId);
 
       if (!result.data) {
         return makeError(result);
@@ -33,6 +36,7 @@ export const authRoutes = defineRoutes({
             email: result.data.user.email,
             name: result.data.user.name,
             expires_at: result.data.expires_at,
+            device_id: result.data.device_id,
           },
         } satisfies ServerResponse,
         { status: HTTP_CREATED }
@@ -44,8 +48,11 @@ export const authRoutes = defineRoutes({
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: result.data.device_id,
         },
       });
+
+      attachDeviceIdCookie(req, res, result.data.device_id);
 
       return res;
     },
@@ -60,7 +67,8 @@ export const authRoutes = defineRoutes({
         return makeError(form);
       }
 
-      const result = await login({ data: form.data, refreshToken });
+      const deviceId = getDeviceIdCookie(req) ?? form.data.device_id;
+      const result = await login({ data: form.data, refreshToken, deviceId });
 
       if (!result.data) {
         return makeError(result);
@@ -72,6 +80,7 @@ export const authRoutes = defineRoutes({
             email: result.data.user.email,
             name: result.data.user.name,
             expires_at: result.data.expires_at,
+            device_id: result.data.device_id,
           },
         } satisfies ServerResponse,
         { status: HTTP_CREATED }
@@ -83,14 +92,17 @@ export const authRoutes = defineRoutes({
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: result.data.device_id,
         },
       });
+
+      attachDeviceIdCookie(req, res, result.data.device_id);
 
       return res;
     },
   },
   '/auth/logout': {
-    POST: (req) => {
+    POST: async (req) => {
       const res = Response.json(
         {
           data: { success: true },
@@ -100,6 +112,7 @@ export const authRoutes = defineRoutes({
 
       deleteSessionCookie(req, res);
 
+      await Promise.resolve();
       return res;
     },
   },

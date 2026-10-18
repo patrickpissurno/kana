@@ -34,6 +34,7 @@ describe('config.server', () => {
       SESSION_COOKIE_DOMAIN: ' localhost ',
       SESSION_COOKIE_NAME: ' session ',
       VITE_SESSION_COOKIE_DATA_NAME: ' session-data ',
+      DEVICE_ID_COOKIE_NAME: ' device_id ',
       CORS_VALID_ORIGINS: ' http://localhost:3000, https://example.com ',
     };
 
@@ -43,6 +44,7 @@ describe('config.server', () => {
       SESSION_COOKIE_DOMAIN: 'localhost',
       SESSION_COOKIE_NAME: 'session',
       VITE_SESSION_COOKIE_DATA_NAME: 'session-data',
+      DEVICE_ID_COOKIE_NAME: 'device_id',
       CORS_VALID_ORIGINS: ['http://localhost:3000', 'https://example.com'],
     };
 

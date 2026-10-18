@@ -1,5 +1,6 @@
 import { startOfDay } from 'date-fns';
 import type { QuizEvent } from '../types/quiz';
+import { QUIZ_RESULT } from '../types/quiz';
 
 const MS_PER_DAY = 86_400_000;
 const MAX_DAILY_SUCCESS_CREDIT = 3;
@@ -53,13 +54,13 @@ function getAcquisitionCap(k: number): number {
 }
 
 export function calculateGlyphScore(events: QuizEvent[], now: number = Date.now()): number {
-  const attempts = events.filter((e) => e.result !== 'skipped');
+  const attempts = events.filter((e) => e.result !== QUIZ_RESULT.SKIPPED);
   const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
   const lastAttempt = sorted[sorted.length - 1];
   if (!lastAttempt) {
     return MIN_PERCENT_SCORE;
   }
-  const isLastWrong = lastAttempt.result === 'wrong';
+  const isLastWrong = lastAttempt.result === QUIZ_RESULT.WRONG;
 
   // Group attempts by calendar day
   const dayGroups = new Map<number, QuizEvent[]>();
@@ -78,7 +79,7 @@ export function calculateGlyphScore(events: QuizEvent[], now: number = Date.now(
     let wrongCount = 0;
 
     for (const attempt of dayAttempts) {
-      if (attempt.result === 'correct') {
+      if (attempt.result === QUIZ_RESULT.CORRECT) {
         correctCount += 1;
         currentStreak += 1;
         if (currentStreak > maxStreak) {

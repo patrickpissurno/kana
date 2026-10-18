@@ -1,5 +1,5 @@
 import type { LoginPayload } from '@kana/helpers/auth/schemas';
-import { password } from 'bun';
+import { password, randomUUIDv7 } from 'bun';
 import type { AuthResult, UserRecord } from './register.server';
 import { SESSION_TTL_SECONDS } from '../config.server';
 import { db } from '../db.server';
@@ -18,10 +18,12 @@ export type UserWithPasswordRecord = UserRecord & {
 export type LoginProps = {
   data: LoginPayload;
   refreshToken: string | undefined;
+  deviceId?: string;
 };
 
-export async function login({ data, refreshToken }: LoginProps): Promise<AuthResult> {
+export async function login({ data, refreshToken, deviceId }: LoginProps): Promise<AuthResult> {
   let user: UserRecord | undefined = undefined;
+  let resolvedDeviceId: string | undefined = deviceId ?? data.device_id;
 
   if (data.email != null) {
     const rows = await db<UserWithPasswordRecord[]>`
@@ -65,7 +67,7 @@ export async function login({ data, refreshToken }: LoginProps): Promise<AuthRes
     const rows = await db<UserRecord[]>`
       SELECT id, email, name
       FROM users
-      WHERE id = ${tokenData.user_id}::uuid AND deleted_at IS NULL
+      WHERE id = ${tokenData.user_id} AND deleted_at IS NULL
     `;
     const foundUser = rows[0];
     if (!foundUser) {
@@ -74,29 +76,32 @@ export async function login({ data, refreshToken }: LoginProps): Promise<AuthRes
       };
     }
 
+    resolvedDeviceId ??= tokenData.device_id;
     user = foundUser;
   }
 
   await db`
     UPDATE users
     SET last_login_at = CURRENT_TIMESTAMP
-    WHERE id = ${user.id}::uuid
+    WHERE id = ${user.id}
   `;
 
+  resolvedDeviceId ??= randomUUIDv7();
   const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
 
   const token = await createToken({
     user_id: user.id,
+    device_id: resolvedDeviceId,
     expires_at: expiresAt,
   });
 
   return {
     data: {
       user: {
-        id: user.id,
         email: user.email,
         name: user.name,
       },
+      device_id: resolvedDeviceId,
       token,
       expires_at: expiresAt,
     },

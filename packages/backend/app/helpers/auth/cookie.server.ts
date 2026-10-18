@@ -2,6 +2,8 @@ import type { User } from '@kana/helpers/auth/schemas';
 import type { BunRequest } from 'bun';
 import { Cookie } from 'bun';
 import {
+  DEVICE_COOKIE_MAX_AGE_SECONDS,
+  DEVICE_ID_COOKIE_NAME,
   SESSION_COOKIE_DOMAIN,
   SESSION_COOKIE_NAME,
   SESSION_TTL_SECONDS,
@@ -15,6 +17,28 @@ export type SessionCookieData = {
 
 export function getSessionCookie(req: BunRequest) {
   return req.cookies.get(SESSION_COOKIE_NAME) ?? undefined;
+}
+
+export function getDeviceIdCookie(req: BunRequest) {
+  return req.cookies.get(DEVICE_ID_COOKIE_NAME) ?? undefined;
+}
+
+export function createDeviceIdCookie(deviceId: string): Cookie {
+  return new Cookie(DEVICE_ID_COOKIE_NAME, deviceId, {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: DEVICE_COOKIE_MAX_AGE_SECONDS,
+    domain: SESSION_COOKIE_DOMAIN,
+  });
+}
+
+export function attachDeviceIdCookie(req: BunRequest, res: Response, deviceId: string) {
+  const deviceCookie = createDeviceIdCookie(deviceId);
+  req.cookies.set(deviceCookie);
+  res.headers.append('Set-Cookie', deviceCookie.serialize());
+  return res;
 }
 
 export function createSessionCookie(data: SessionCookieData): [Cookie, Cookie] {

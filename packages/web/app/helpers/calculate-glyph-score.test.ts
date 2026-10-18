@@ -1,6 +1,7 @@
 import { subDays } from 'date-fns';
 import { describe, expect, it } from 'vitest';
 import type { QuizEvent } from '../types/quiz';
+import { QUIZ_RESULT } from '../types/quiz';
 import { calculateGlyphScore } from './calculate-glyph-score';
 
 const OFFSET_1_SECOND = 1000;
@@ -26,28 +27,30 @@ describe('calculateGlyphScore', () => {
 
   it('returns 0 when there are no attempts or only skipped events', () => {
     expect(calculateGlyphScore([])).toBe(0);
-    expect(calculateGlyphScore([{ glyph: 'あ', timestamp: BASE_NOW, result: 'skipped' }])).toBe(0);
+    expect(
+      calculateGlyphScore([{ glyph: 'あ', timestamp: BASE_NOW, result: QUIZ_RESULT.SKIPPED }])
+    ).toBe(0);
   });
 
   it('returns 0 when all attempts are wrong (k = 0)', () => {
-    const events: QuizEvent[] = [{ glyph: 'あ', timestamp: BASE_NOW, result: 'wrong' }];
+    const events: QuizEvent[] = [{ glyph: 'あ', timestamp: BASE_NOW, result: QUIZ_RESULT.WRONG }];
     expect(calculateGlyphScore(events, BASE_NOW)).toBe(0);
   });
 
   it('calculates score for day 1 mastery cap (k = 1, cap = 40%)', () => {
     const events: QuizEvent[] = [
-      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: 'correct' },
-      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_HALF_SECOND, result: 'correct' },
-      { glyph: 'あ', timestamp: BASE_NOW, result: 'correct' },
+      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_HALF_SECOND, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: BASE_NOW, result: QUIZ_RESULT.CORRECT },
     ];
     expect(calculateGlyphScore(events, BASE_NOW)).toBe(EXPECTED_DAY1_SCORE);
   });
 
   it('weights daily credit by streak and accuracy', () => {
     const events: QuizEvent[] = [
-      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_2_SECONDS, result: 'correct' },
-      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: 'wrong' },
-      { glyph: 'あ', timestamp: BASE_NOW, result: 'correct' },
+      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_2_SECONDS, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: QUIZ_RESULT.WRONG },
+      { glyph: 'あ', timestamp: BASE_NOW, result: QUIZ_RESULT.CORRECT },
     ];
     expect(calculateGlyphScore(events, BASE_NOW)).toBe(EXPECTED_ACCURACY_SCORE);
   });
@@ -60,9 +63,9 @@ describe('calculateGlyphScore', () => {
     const day5 = BASE_NOW;
 
     const buildDay = (timestamp: number): QuizEvent[] => [
-      { glyph: 'あ', timestamp, result: 'correct' },
-      { glyph: 'あ', timestamp: timestamp + TIME_OFFSET_10_MS, result: 'correct' },
-      { glyph: 'あ', timestamp: timestamp + TIME_OFFSET_20_MS, result: 'correct' },
+      { glyph: 'あ', timestamp, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: timestamp + TIME_OFFSET_10_MS, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: timestamp + TIME_OFFSET_20_MS, result: QUIZ_RESULT.CORRECT },
     ];
 
     // 2 distinct days
@@ -85,23 +88,25 @@ describe('calculateGlyphScore', () => {
   it('decays retention over time based on forgetting curve', () => {
     const threeDaysAgo = subDays(BASE_NOW, DAYS_OFFSET_3).getTime();
     const events: QuizEvent[] = [
-      { glyph: 'あ', timestamp: threeDaysAgo, result: 'correct' },
-      { glyph: 'あ', timestamp: threeDaysAgo + TIME_OFFSET_10_MS, result: 'correct' },
-      { glyph: 'あ', timestamp: threeDaysAgo + TIME_OFFSET_20_MS, result: 'correct' },
+      { glyph: 'あ', timestamp: threeDaysAgo, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: threeDaysAgo + TIME_OFFSET_10_MS, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: threeDaysAgo + TIME_OFFSET_20_MS, result: QUIZ_RESULT.CORRECT },
     ];
     expect(calculateGlyphScore(events, BASE_NOW)).toBe(EXPECTED_DECAY_SCORE);
   });
 
   it('drops stability to 0.5 when the most recent attempt is wrong', () => {
     const events: QuizEvent[] = [
-      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: 'correct' },
-      { glyph: 'あ', timestamp: BASE_NOW, result: 'wrong' },
+      { glyph: 'あ', timestamp: BASE_NOW - OFFSET_1_SECOND, result: QUIZ_RESULT.CORRECT },
+      { glyph: 'あ', timestamp: BASE_NOW, result: QUIZ_RESULT.WRONG },
     ];
     expect(calculateGlyphScore(events, BASE_NOW)).toBe(EXPECTED_WRONG_PENALTY_SCORE);
   });
 
   it('uses default now parameter when not provided', () => {
-    const events: QuizEvent[] = [{ glyph: 'あ', timestamp: Date.now(), result: 'correct' }];
+    const events: QuizEvent[] = [
+      { glyph: 'あ', timestamp: Date.now(), result: QUIZ_RESULT.CORRECT },
+    ];
     const score = calculateGlyphScore(events);
     expect(score).toBeGreaterThan(0);
   });

@@ -1,4 +1,8 @@
-export type QuizResult = 'correct' | 'wrong' | 'skipped';
+import type { QuizResult } from '@kana/helpers/sync/schemas';
+import { QUIZ_RESULT } from '@kana/helpers/sync/schemas';
+
+export { QUIZ_RESULT };
+export type { QuizResult };
 
 export type QuizEvent = {
   glyph: string;

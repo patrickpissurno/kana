@@ -10,6 +10,9 @@ export const SESSION_TTL_SECONDS = 31536000;
 /** 24 hours */
 export const CORS_MAX_AGE_SECONDS = 86400;
 
+/** 10 years */
+export const DEVICE_COOKIE_MAX_AGE_SECONDS = 315360000;
+
 export const AES_GCM_IV_LENGTH = 12;
 
 const hostSchema = z
@@ -24,6 +27,7 @@ export const schema = z.object({
   SESSION_COOKIE_DOMAIN: hostSchema,
   SESSION_COOKIE_NAME: z.string().trim().min(1),
   VITE_SESSION_COOKIE_DATA_NAME: z.string().trim().min(1),
+  DEVICE_ID_COOKIE_NAME: z.string().trim().min(1),
   CORS_VALID_ORIGINS: z
     .string()
     .transform((value) =>
@@ -41,5 +45,6 @@ export const {
   SESSION_COOKIE_DOMAIN,
   SESSION_COOKIE_NAME,
   VITE_SESSION_COOKIE_DATA_NAME,
+  DEVICE_ID_COOKIE_NAME,
   CORS_VALID_ORIGINS,
 } = schema.parse(process.env);

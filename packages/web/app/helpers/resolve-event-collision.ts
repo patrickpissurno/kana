@@ -1,19 +1,22 @@
-import type { QuizEvent, QuizResult } from '../types/quiz';
+import type { QuizEvent } from '../types/quiz';
 
-const RESULT_PRECEDENCE: Record<QuizResult, number> = {
-  correct: 3,
-  wrong: 2,
-  skipped: 1,
-};
+export function compareCollateC(a: string, b: string): number {
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const diff = a.charCodeAt(i) - b.charCodeAt(i);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return a.length - b.length;
+}
 
 export function resolveEventCollision(a: QuizEvent, b: QuizEvent): QuizEvent {
   if (a.glyph !== b.glyph) {
-    return a.glyph > b.glyph ? a : b;
+    return compareCollateC(a.glyph, b.glyph) > 0 ? a : b;
   }
-  const precA = RESULT_PRECEDENCE[a.result];
-  const precB = RESULT_PRECEDENCE[b.result];
-  if (precA !== precB) {
-    return precA > precB ? a : b;
+  if (a.result !== b.result) {
+    return a.result > b.result ? a : b;
   }
   return a;
 }

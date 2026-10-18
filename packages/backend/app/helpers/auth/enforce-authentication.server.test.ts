@@ -18,7 +18,8 @@ const mockGetSessionCookie = vi.mocked(getSessionCookie);
 const mockValidateToken = vi.mocked(validateToken);
 
 const VALID_TOKEN_DATA: TokenData = {
-  user_id: '123e4567-e89b-12d3-a456-426614174000',
+  user_id: 1,
+  device_id: '123e4567-e89b-12d3-a456-426614174000',
   expires_at: '2026-10-15T00:00:00.000Z',
 };
 

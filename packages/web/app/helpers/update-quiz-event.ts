@@ -1,9 +1,10 @@
 import type { QuizEvent, QuizResult } from '../types/quiz';
+import { QUIZ_RESULT } from '../types/quiz';
 import { getDb, STORE_NAME } from './get-db';
 
 export async function updateQuizEvent(
   timestamp: number,
-  result: Exclude<QuizResult, 'skipped'>
+  result: Exclude<QuizResult, typeof QUIZ_RESULT.SKIPPED>
 ): Promise<void> {
   const db = await getDb();
   return new Promise((resolve, reject) => {

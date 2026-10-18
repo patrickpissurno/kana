@@ -1,4 +1,5 @@
 import type { SyncQuizEventsPayload } from '@kana/helpers/sync/schemas';
+import { QUIZ_RESULT } from '@kana/helpers/sync/schemas';
 import { safeFetch } from '@kana/helpers/utils/safe-fetch';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { VITE_BACKEND_URL } from '~/helpers/config';
@@ -22,19 +23,15 @@ describe('syncQuizEvents endpoint', () => {
 
   it('posts payload to /sync/quiz-events with JSON body and credentials', async () => {
     const payload: SyncQuizEventsPayload = {
-      items: [
-        {
-          glyph: 'あ',
-          timestamp: TEST_TIMESTAMP,
-          result: 'correct',
-        },
-      ],
-      totalItems: 1,
+      timestamps: [TEST_TIMESTAMP],
+      glyphs: ['あ'],
+      results: [QUIZ_RESULT.CORRECT],
     };
 
     const mockResponseData = {
-      missing: [],
-      totalItems: 1,
+      timestamps: [],
+      glyphs: [],
+      results: [],
     };
 
     vi.mocked(safeFetch).mockResolvedValue({

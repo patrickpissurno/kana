@@ -4,7 +4,8 @@ import { createToken } from './create-token.server';
 import { sessionKey } from './derive-session-key.server';
 import { validateToken } from './validate-token.server';
 
-const TEST_UUID = '123e4567-e89b-12d3-a456-426614174000';
+const TEST_USER_ID = 1;
+const TEST_DEVICE_ID = '123e4567-e89b-12d3-a456-426614174000';
 const FUTURE_EXPIRATION_MS = 60000;
 const PAST_EXPIRATION_MS = 1000;
 const CORRUPTED_CIPHERTEXT_EXTRA_BYTES = 16;
@@ -56,7 +57,7 @@ describe('validate-token.server', () => {
 
   it('returns null when payload does not conform to tokenDataSchema', async () => {
     const token = await encryptRawPayload(
-      JSON.stringify({ user_id: 'not-a-uuid', expires_at: 'bad-date' })
+      JSON.stringify({ user_id: 'not-a-number', expires_at: 'bad-date' })
     );
 
     const result = await validateToken(token);
@@ -65,7 +66,8 @@ describe('validate-token.server', () => {
 
   it('returns null when token has expired', async () => {
     const token = await createToken({
-      user_id: TEST_UUID,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
       expires_at: new Date(Date.now() - PAST_EXPIRATION_MS).toISOString(),
     });
 
@@ -76,13 +78,15 @@ describe('validate-token.server', () => {
   it('returns parsed token data for valid, unexpired token', async () => {
     const expiresAt = new Date(Date.now() + FUTURE_EXPIRATION_MS).toISOString();
     const token = await createToken({
-      user_id: TEST_UUID,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
       expires_at: expiresAt,
     });
 
     const result = await validateToken(token);
     expect(result).toEqual({
-      user_id: TEST_UUID,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
       expires_at: expiresAt,
     });
   });

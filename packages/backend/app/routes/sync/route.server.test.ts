@@ -8,7 +8,8 @@ import { makeBunRequest } from '~/mocks/bun/bun-request.mock';
 import { syncRoutes } from './route.server';
 
 const ORIGIN = CORS_VALID_ORIGINS.at(0)!;
-const TEST_USER_ID = '123e4567-e89b-12d3-a456-426614174000';
+const TEST_USER_ID = 1;
+const TEST_DEVICE_ID = '018f0000-0000-7000-8000-000000000001';
 
 vi.mock('~/helpers/auth/enforce-authentication.server', () => ({
   enforceAuthentication: vi.fn(),
@@ -30,6 +31,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockEnforceAuthentication.mockResolvedValue({
     user_id: TEST_USER_ID,
+    device_id: TEST_DEVICE_ID,
     expires_at: '2026-10-15T00:00:00.000Z',
   });
 });
@@ -75,7 +77,7 @@ describe('syncRoutes', () => {
 
     test('returns 400 bad request when syncQuizEvents returns an error', async () => {
       mockParseJSONData.mockResolvedValueOnce({
-        data: { items: [], totalItems: 0 },
+        data: { timestamps: [], glyphs: [], results: [] },
         error: undefined,
       });
 
@@ -97,18 +99,15 @@ describe('syncRoutes', () => {
     });
 
     it('returns 200 OK with sync result on happy path', async () => {
-      const syncResultData = {
-        missing: [],
-        totalItems: 0,
-      };
+      const rawJsonResponse = '{"data":{"timestamps":[1000],"glyphs":["a"],"results":[3]}}';
 
       mockParseJSONData.mockResolvedValueOnce({
-        data: { items: [], totalItems: 0 },
+        data: { timestamps: [], glyphs: [], results: [] },
         error: undefined,
       });
 
       mockSyncQuizEvents.mockResolvedValueOnce({
-        data: syncResultData,
+        rawJson: rawJsonResponse,
       });
 
       const req = makeBunRequest('http://localhost:3001/sync/quiz-events', {
@@ -119,12 +118,11 @@ describe('syncRoutes', () => {
       const res = await POST(req);
 
       expect(res.status).toBe(HTTP_OK);
-      expect(await res.json()).toEqual({
-        data: syncResultData,
-      });
+      expect(await res.json()).toEqual(JSON.parse(rawJsonResponse));
       expect(mockSyncQuizEvents).toHaveBeenCalledWith({
-        data: { items: [], totalItems: 0 },
+        data: { timestamps: [], glyphs: [], results: [] },
         user_id: TEST_USER_ID,
+        device_id: TEST_DEVICE_ID,
       });
     });
   });

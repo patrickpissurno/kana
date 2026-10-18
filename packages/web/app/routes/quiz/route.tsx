@@ -5,6 +5,7 @@ import { getRandomQuizComponent } from '../../components/quiz/quiz-registry';
 import { HIRAGANA_MAP } from '../../data/hiragana';
 import { appendQuizEvent } from '../../helpers/append-quiz-event';
 import { updateQuizEvent } from '../../helpers/update-quiz-event';
+import { QUIZ_RESULT } from '../../types/quiz';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -33,7 +34,7 @@ export default function Page({}: Route.ComponentProps) {
     eventTimestampPromiseRef.current
       ?.then(async (timestamp) => {
         if (timestamp !== null) {
-          await updateQuizEvent(timestamp, 'correct');
+          await updateQuizEvent(timestamp, QUIZ_RESULT.CORRECT);
         }
       })
       .catch(() => {
@@ -45,7 +46,7 @@ export default function Page({}: Route.ComponentProps) {
     eventTimestampPromiseRef.current
       ?.then(async (timestamp) => {
         if (timestamp !== null) {
-          await updateQuizEvent(timestamp, 'wrong');
+          await updateQuizEvent(timestamp, QUIZ_RESULT.WRONG);
         }
       })
       .catch(() => {

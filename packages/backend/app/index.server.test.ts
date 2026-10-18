@@ -4,6 +4,11 @@ const TEST_SERVER_URL = 'http://localhost:3001/';
 const EXPECTED_LOG_MESSAGE = `Server running at ${TEST_SERVER_URL}`;
 
 const mockServe = vi.fn();
+const mockStartDailyCacheEvictionCron = vi.fn();
+
+vi.mock('~/helpers/cron.server', () => ({
+  startDailyCacheEvictionCron: () => mockStartDailyCacheEvictionCron(),
+}));
 
 vi.mock('bun', async (importOriginal) => {
   const actual = await importOriginal<typeof import('bun')>();
@@ -35,6 +40,7 @@ describe('index.server', () => {
         development: true,
       })
     );
+    expect(mockStartDailyCacheEvictionCron).toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith(EXPECTED_LOG_MESSAGE);
   });
 
@@ -52,5 +58,6 @@ describe('index.server', () => {
         development: false,
       })
     );
+    expect(mockStartDailyCacheEvictionCron).toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import type { QuizEvent } from '../types/quiz';
+import { QUIZ_RESULT } from '../types/quiz';
 import { getDb, STORE_NAME } from './get-db';
 
 export async function appendQuizEvent(glyph: string): Promise<number> {
@@ -10,7 +11,7 @@ export async function appendQuizEvent(glyph: string): Promise<number> {
     const event: QuizEvent = {
       glyph,
       timestamp: Date.now(),
-      result: 'skipped',
+      result: QUIZ_RESULT.SKIPPED,
     };
 
     const request = store.add(event);

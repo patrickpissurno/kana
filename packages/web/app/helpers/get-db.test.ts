@@ -1,17 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getDb, GLYPH_INDEX, resetDbForTesting, STORE_NAME } from './get-db';
+import { QUIZ_RESULT } from '../types/quiz';
+import {
+  convertResultToNumeric,
+  getDb,
+  GLYPH_INDEX,
+  resetDbForTesting,
+  STORE_NAME,
+} from './get-db';
 
 const V1_VERSION = 1;
 const V2_VERSION = 2;
+const DB_VERSION = 3;
 const TEST_TIMESTAMP = 12_345;
 const TEST_LEGACY_ID = 1;
 const TEST_COLLISION_ID = 2;
+
+describe('convertResultToNumeric', () => {
+  it('converts string and numeric results to correct integer constants', () => {
+    expect(convertResultToNumeric('correct')).toBe(QUIZ_RESULT.CORRECT);
+    expect(convertResultToNumeric(QUIZ_RESULT.CORRECT)).toBe(QUIZ_RESULT.CORRECT);
+    expect(convertResultToNumeric('wrong')).toBe(QUIZ_RESULT.WRONG);
+    expect(convertResultToNumeric(QUIZ_RESULT.WRONG)).toBe(QUIZ_RESULT.WRONG);
+    expect(convertResultToNumeric('skipped')).toBe(QUIZ_RESULT.SKIPPED);
+    expect(convertResultToNumeric('unknown')).toBe(QUIZ_RESULT.SKIPPED);
+  });
+});
 
 describe('getDb', () => {
   it('opens kana_db and creates object store with indexes on fresh upgrade', async () => {
     const db = await getDb();
     expect(db.name).toBe('kana_db');
-    expect(db.version).toBe(V2_VERSION);
+    expect(db.version).toBe(DB_VERSION);
     expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
 
     const tx = db.transaction([STORE_NAME], 'readonly');
@@ -25,11 +44,14 @@ describe('getDb', () => {
     expect(db1).toBe(db2);
   });
 
-  it('migrates existing records from legacy store with keyPath id to keyPath timestamp', async () => {
+  it('migrates existing records from legacy v1 store with keyPath id to keyPath timestamp and numeric results', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     v1Req.onupgradeneeded = () => {
       const db = v1Req.result;
-      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      const store = db.createObjectStore(STORE_NAME, {
+        keyPath: 'id',
+        autoIncrement: true,
+      });
       store.add({
         id: TEST_LEGACY_ID,
         glyph: 'あ',
@@ -42,7 +64,7 @@ describe('getDb', () => {
     });
 
     const db = await getDb();
-    expect(db.version).toBe(V2_VERSION);
+    expect(db.version).toBe(DB_VERSION);
 
     const tx = db.transaction([STORE_NAME], 'readonly');
     const store = tx.objectStore(STORE_NAME);
@@ -56,16 +78,54 @@ describe('getDb', () => {
     expect(record).toEqual({
       glyph: 'あ',
       timestamp: TEST_TIMESTAMP,
-      result: 'correct',
+      result: QUIZ_RESULT.CORRECT,
     });
     expect(record['id']).toBeUndefined();
   });
 
-  it('deduplicates legacy records with collision during v1 migration', async () => {
+  it('migrates existing records from v2 store to v3 converting string results to numeric', async () => {
+    const v2Req = indexedDB.open('kana_db', V2_VERSION);
+    v2Req.onupgradeneeded = () => {
+      const db = v2Req.result;
+      const store = db.createObjectStore(STORE_NAME, {
+        keyPath: 'timestamp',
+      });
+      store.createIndex(GLYPH_INDEX, 'glyph');
+      store.add({
+        glyph: 'い',
+        timestamp: TEST_TIMESTAMP,
+        result: 'wrong',
+      });
+    };
+    await new Promise<void>((resolve) => {
+      v2Req.onsuccess = () => resolve();
+    });
+
+    const db = await getDb();
+    expect(db.version).toBe(DB_VERSION);
+
+    const tx = db.transaction([STORE_NAME], 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const getReq = store.get(TEST_TIMESTAMP);
+    const record = await new Promise<Record<string, unknown>>((resolve) => {
+      getReq.onsuccess = () => resolve(getReq.result as Record<string, unknown>);
+    });
+
+    expect(record).toEqual({
+      glyph: 'い',
+      timestamp: TEST_TIMESTAMP,
+      result: QUIZ_RESULT.WRONG,
+    });
+  });
+
+  it('deduplicates legacy records with collision during migration', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     v1Req.onupgradeneeded = () => {
       const db = v1Req.result;
-      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      const store = db.createObjectStore(STORE_NAME, {
+        keyPath: 'id',
+        autoIncrement: true,
+      });
       store.add({
         id: TEST_LEGACY_ID,
         glyph: 'あ',
@@ -94,11 +154,11 @@ describe('getDb', () => {
     expect(record).toEqual({
       glyph: 'あ',
       timestamp: TEST_TIMESTAMP,
-      result: 'correct',
+      result: QUIZ_RESULT.CORRECT,
     });
   });
 
-  it('migrates legacy v1 database when store does not exist in v1', async () => {
+  it('migrates legacy database when store does not exist in legacy version', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     await new Promise<void>((resolve) => {
       v1Req.onsuccess = () => resolve();
@@ -106,6 +166,24 @@ describe('getDb', () => {
 
     const db = await getDb();
     expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
+  });
+
+  it('calls navigator.storage.persist and handles rejection gracefully', async () => {
+    const originalStorage = navigator.storage;
+    const persistMock = vi.fn().mockRejectedValueOnce(new Error('Persist failed'));
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { persist: persistMock },
+    });
+
+    const db = await getDb();
+    expect(db.version).toBe(DB_VERSION);
+    expect(persistMock).toHaveBeenCalled();
+
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: originalStorage,
+    });
   });
 
   it('uses fallback version check when indexedDB.databases is not defined (fresh DB abortion)', async () => {
@@ -116,7 +194,7 @@ describe('getDb', () => {
     });
 
     const db = await getDb();
-    expect(db.version).toBe(V2_VERSION);
+    expect(db.version).toBe(DB_VERSION);
 
     Object.defineProperty(indexedDB, 'databases', {
       configurable: true,
@@ -141,7 +219,7 @@ describe('getDb', () => {
     });
 
     const db = await getDb();
-    expect(db.version).toBe(V2_VERSION);
+    expect(db.version).toBe(DB_VERSION);
 
     Object.defineProperty(indexedDB, 'databases', {
       configurable: true,
@@ -220,7 +298,7 @@ describe('getDb', () => {
     });
   });
 
-  it('rejects when readV1Records encounters an error on open with DOMException', async () => {
+  it('rejects when readLegacyRecords encounters an error on open with DOMException', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     await new Promise<void>((resolve) => {
       v1Req.onsuccess = () => resolve();
@@ -253,7 +331,7 @@ describe('getDb', () => {
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when readV1Records encounters an error on open without DOMException', async () => {
+  it('rejects when readLegacyRecords encounters an error on open without DOMException', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     await new Promise<void>((resolve) => {
       v1Req.onsuccess = () => resolve();
@@ -285,7 +363,7 @@ describe('getDb', () => {
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when readV1Records encounters an error on getAll with DOMException', async () => {
+  it('rejects when readLegacyRecords encounters an error on getAll with DOMException', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     v1Req.onupgradeneeded = () => {
       const db = v1Req.result;
@@ -352,7 +430,7 @@ describe('getDb', () => {
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when readV1Records encounters an error on getAll without DOMException', async () => {
+  it('rejects when readLegacyRecords encounters an error on getAll without DOMException', async () => {
     const v1Req = indexedDB.open('kana_db', V1_VERSION);
     v1Req.onupgradeneeded = () => {
       const db = v1Req.result;
@@ -418,12 +496,12 @@ describe('getDb', () => {
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when openV2Database encounters an error on open with DOMException', async () => {
-    const testError = new DOMException('V2 open failed', 'AbortError');
+  it('rejects when openDatabase encounters an error on open with DOMException', async () => {
+    const testError = new DOMException('DB open failed', 'AbortError');
     const originalOpen = indexedDB.open;
 
     vi.spyOn(indexedDB, 'open').mockImplementation((_name: string, version?: number) => {
-      if (version === V2_VERSION) {
+      if (version === DB_VERSION) {
         const req = {
           result: undefined as unknown as IDBDatabase,
           error: testError,
@@ -442,15 +520,15 @@ describe('getDb', () => {
       return originalOpen.call(indexedDB, _name, version);
     });
 
-    await expect(getDb()).rejects.toThrow('V2 open failed');
+    await expect(getDb()).rejects.toThrow('DB open failed');
     indexedDB.open = originalOpen;
   });
 
-  it('rejects when openV2Database encounters an error on open without DOMException', async () => {
+  it('rejects when openDatabase encounters an error on open without DOMException', async () => {
     const originalOpen = indexedDB.open;
 
     vi.spyOn(indexedDB, 'open').mockImplementation((_name: string, version?: number) => {
-      if (version === V2_VERSION) {
+      if (version === DB_VERSION) {
         const req = {
           result: undefined as unknown as IDBDatabase,
           error: null,
@@ -499,7 +577,7 @@ describe('getDb', () => {
 
     resetDbForTesting();
     const db = await getDb();
-    expect(db.version).toBe(V2_VERSION);
+    expect(db.version).toBe(DB_VERSION);
   });
 
   it('exports correct constants', () => {

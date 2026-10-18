@@ -1,24 +1,22 @@
-import type { QuizEvent, SyncQuizEventsPayload } from '@kana/helpers/sync/schemas';
+import type { SyncQuizEventsData } from '@kana/helpers/sync/schemas';
+import { QUIZ_RESULT } from '@kana/helpers/sync/schemas';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SYNC_QUIZ_EVENTS_ERROR, syncQuizEvents } from './quiz-events.server';
+import { EMPTY_SYNC_RAW_JSON, SYNC_QUIZ_EVENTS_ERROR, syncQuizEvents } from './quiz-events.server';
 
-const mockQuery = vi.fn();
+const mocks = vi.hoisted(() => {
+  const query = vi.fn();
+  const arr = vi.fn((a) => a);
+  const tx = Object.assign((...args: unknown[]) => query(...args), {
+    array: arr,
+  });
+  return { query, arr, tx };
+});
 
 vi.mock('../db.server', () => {
-  const dbFn = Object.assign(
-    (...args: unknown[]) => {
-      const isTaggedTemplate =
-        args.length > 0 && Array.isArray(args[0]) && 'raw' in (args[0] as object);
-
-      if (isTaggedTemplate) {
-        return mockQuery(...args);
-      }
-      return '';
-    },
-    {
-      array: vi.fn(),
-    }
-  );
+  const dbFn = Object.assign((...args: unknown[]) => mocks.query(...args), {
+    array: mocks.arr,
+    begin: vi.fn((cb: (tx: unknown) => unknown) => cb(mocks.tx)),
+  });
 
   return { db: dbFn };
 });
@@ -27,141 +25,156 @@ function mockDbResult<T>(result: T[]) {
   return Object.assign(result, { value: [], columns: [] });
 }
 
-const TEST_USER_ID = '123e4567-e89b-12d3-a456-426614174000';
-const TEST_TIMESTAMP_1 = 1000;
-const TEST_TIMESTAMP_2 = 2000;
-const TEST_COUNT_ONE = 1;
-const TEST_COUNT_TWO = 2;
+const TEST_USER_ID = 1;
+const TEST_DEVICE_ID = '018f0000-0000-7000-8000-000000000001';
+const TEST_TIMESTAMP = 1000;
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe('quiz-events.server', () => {
-  it('upserts items and returns empty missing when count equals totalItems', async () => {
-    const payload: SyncQuizEventsPayload = {
-      items: [
-        {
-          glyph: 'あ',
-          timestamp: TEST_TIMESTAMP_1,
-          result: 'correct',
-        },
-      ],
-      totalItems: TEST_COUNT_ONE,
+  it('upserts items, evicts siblings when updated, and hits fast path when cache is up to date', async () => {
+    const data: SyncQuizEventsData = {
+      timestamps: [TEST_TIMESTAMP],
+      glyphs: ['あ'],
+      results: [QUIZ_RESULT.CORRECT],
     };
 
-    mockQuery
-      .mockResolvedValueOnce(mockDbResult([{ id: 'id-1' }]))
-      .mockResolvedValueOnce(mockDbResult([{ count: TEST_COUNT_ONE }]));
+    mocks.query
+      .mockResolvedValueOnce(mockDbResult([{ id: 1 }]))
+      .mockResolvedValueOnce(mockDbResult([{ id: 2 }]))
+      .mockResolvedValueOnce(mockDbResult([]))
+      .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 2 }]))
+      .mockResolvedValueOnce(mockDbResult([{ last_event_id: 2 }]));
 
-    const result = await syncQuizEvents({ data: payload, user_id: TEST_USER_ID });
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
 
     expect(result).toEqual({
-      data: {
-        missing: [],
-        totalItems: TEST_COUNT_ONE,
-      },
+      rawJson: EMPTY_SYNC_RAW_JSON,
     });
   });
 
-  it('upserts items and returns missing items when server count is greater than totalItems', async () => {
-    const payload: SyncQuizEventsPayload = {
-      items: [
-        {
-          glyph: 'あ',
-          timestamp: TEST_TIMESTAMP_1,
-          result: 'correct',
-        },
-      ],
-      totalItems: TEST_COUNT_ONE,
+  it('upserts items without sibling eviction when no events were updated and fetches missing events', async () => {
+    const data: SyncQuizEventsData = {
+      timestamps: [TEST_TIMESTAMP],
+      glyphs: ['あ'],
+      results: [QUIZ_RESULT.CORRECT],
     };
 
-    const missingRow = {
-      timestamp: String(TEST_TIMESTAMP_2),
-      glyph: 'い',
-      result: 'wrong' as const,
-    };
+    const missingPayload = '{"data":{"timestamps":[2000],"glyphs":["い"],"results":[2]}}';
 
-    mockQuery
-      .mockResolvedValueOnce(mockDbResult([{ id: 'id-1' }]))
-      .mockResolvedValueOnce(mockDbResult([{ count: TEST_COUNT_TWO }]))
-      .mockResolvedValueOnce(mockDbResult([missingRow]));
+    mocks.query
+      .mockResolvedValueOnce(mockDbResult([{ id: 1 }]))
+      .mockResolvedValueOnce(mockDbResult([]))
+      .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 1 }]))
+      .mockResolvedValueOnce(mockDbResult([{ last_event_id: 2 }]))
+      .mockResolvedValueOnce(
+        mockDbResult([{ payload: missingPayload, missing_bitmap: 'bitmap_hex' }])
+      )
+      .mockResolvedValueOnce(mockDbResult([]));
 
-    const result = await syncQuizEvents({ data: payload, user_id: TEST_USER_ID });
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
 
     expect(result).toEqual({
-      data: {
-        missing: [
-          {
-            timestamp: TEST_TIMESTAMP_2,
-            glyph: 'い',
-            result: 'wrong',
-          },
-        ] satisfies QuizEvent[],
-        totalItems: TEST_COUNT_TWO,
-      },
+      rawJson: missingPayload,
     });
   });
 
-  it('handles empty items without running upsert query and returns missing items', async () => {
-    const payload: SyncQuizEventsPayload = {
-      items: [],
-      totalItems: 0,
+  it('handles empty timestamps without running insert/update CTEs and handles null missing_bitmap', async () => {
+    const data: SyncQuizEventsData = {
+      timestamps: [],
+      glyphs: [],
+      results: [],
     };
 
-    const missingRow = {
-      timestamp: TEST_TIMESTAMP_1,
-      glyph: 'あ',
-      result: 'correct' as const,
-    };
+    const emptyMissingPayload = '{"data":{"timestamps":[],"glyphs":[],"results":[]}}';
 
-    mockQuery
-      .mockResolvedValueOnce(mockDbResult([{ count: TEST_COUNT_ONE }]))
-      .mockResolvedValueOnce(mockDbResult([missingRow]));
+    mocks.query
+      .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 0 }]))
+      .mockResolvedValueOnce(mockDbResult([{ last_event_id: 1 }]))
+      .mockResolvedValueOnce(
+        mockDbResult([{ payload: emptyMissingPayload, missing_bitmap: null }])
+      );
 
-    const result = await syncQuizEvents({ data: payload, user_id: TEST_USER_ID });
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
 
     expect(result).toEqual({
-      data: {
-        missing: [
-          {
-            timestamp: TEST_TIMESTAMP_1,
-            glyph: 'あ',
-            result: 'correct',
-          },
-        ],
-        totalItems: TEST_COUNT_ONE,
-      },
+      rawJson: emptyMissingPayload,
     });
   });
 
-  it('handles empty count result using default count of 0', async () => {
-    const payload: SyncQuizEventsPayload = {
-      items: [],
-      totalItems: 0,
+  it('handles empty database returns for upsertRows, counterRows, and missingRows using fallbacks', async () => {
+    const data: SyncQuizEventsData = {
+      timestamps: [],
+      glyphs: [],
+      results: [],
     };
 
-    mockQuery.mockResolvedValueOnce(mockDbResult([]));
+    mocks.query
+      .mockResolvedValueOnce(mockDbResult([]))
+      .mockResolvedValueOnce(mockDbResult([{ last_event_id: 1 }]))
+      .mockResolvedValueOnce(mockDbResult([]));
 
-    const result = await syncQuizEvents({ data: payload, user_id: TEST_USER_ID });
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
 
     expect(result).toEqual({
-      data: {
-        missing: [],
-        totalItems: 0,
-      },
+      rawJson: EMPTY_SYNC_RAW_JSON,
+    });
+  });
+
+  it('handles empty counterRows by falling back to 0 last_event_id and hitting fast path', async () => {
+    const data: SyncQuizEventsData = {
+      timestamps: [],
+      glyphs: [],
+      results: [],
+    };
+
+    mocks.query
+      .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 0 }]))
+      .mockResolvedValueOnce(mockDbResult([]));
+
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
+
+    expect(result).toEqual({
+      rawJson: EMPTY_SYNC_RAW_JSON,
     });
   });
 
   it('catches database exceptions and returns error message', async () => {
-    const payload: SyncQuizEventsPayload = {
-      items: [],
-      totalItems: 0,
+    const data: SyncQuizEventsData = {
+      timestamps: [],
+      glyphs: [],
+      results: [],
     };
 
-    mockQuery.mockRejectedValueOnce(new Error('Connection terminated'));
+    mocks.query.mockRejectedValueOnce(new Error('Connection terminated'));
 
-    const result = await syncQuizEvents({ data: payload, user_id: TEST_USER_ID });
+    const result = await syncQuizEvents({
+      data,
+      user_id: TEST_USER_ID,
+      device_id: TEST_DEVICE_ID,
+    });
 
     expect(result).toEqual({
       nonFieldError: SYNC_QUIZ_EVENTS_ERROR,

@@ -1,7 +1,11 @@
 import { randomUUIDv7 } from 'bun';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 import type { AuthResult } from '~/helpers/auth/register.server';
-import { attachSessionCookie, deleteSessionCookie } from '~/helpers/auth/cookie.server';
+import {
+  attachDeviceIdCookie,
+  attachSessionCookie,
+  deleteSessionCookie,
+} from '~/helpers/auth/cookie.server';
 import { login } from '~/helpers/auth/login.server';
 import { register } from '~/helpers/auth/register.server';
 import { CORS_VALID_ORIGINS } from '~/helpers/config.server';
@@ -18,6 +22,7 @@ vi.mock('~/helpers/auth/cookie.server', { spy: true });
 const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);
 const mockAttachSessionCookie = vi.mocked(attachSessionCookie);
+const mockAttachDeviceIdCookie = vi.mocked(attachDeviceIdCookie);
 const mockDeleteSessionCookie = vi.mocked(deleteSessionCookie);
 
 const defaultMockRegisterImpl = mockRegister.getMockImplementation()!;
@@ -79,9 +84,11 @@ describe('authRoutes', () => {
     });
 
     test('happy path works', async () => {
+      const deviceId = randomUUIDv7();
       const result = {
         data: {
-          user: { id: randomUUIDv7(), email: 'test@example.com', name: 'Test' },
+          user: { email: 'test@example.com', name: 'Test' },
+          device_id: deviceId,
           token: 'token',
           expires_at: new Date().toISOString(),
         },
@@ -103,6 +110,7 @@ describe('authRoutes', () => {
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: deviceId,
         },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
@@ -112,8 +120,41 @@ describe('authRoutes', () => {
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: deviceId,
         },
       });
+      expect(mockAttachDeviceIdCookie).toHaveBeenCalledOnce();
+      expect(mockAttachDeviceIdCookie).toHaveBeenCalledWith(req, res, deviceId);
+    });
+
+    test('passes existing device id from cookie or form to register', async () => {
+      const customDeviceId = randomUUIDv7();
+      const formWithDevice = new FormData();
+      formWithDevice.append('email', 'test@example.com');
+      formWithDevice.append('name', 'Test');
+      formWithDevice.append('password', 'Password1!');
+      formWithDevice.append('device_id', customDeviceId);
+
+      mockRegister.mockImplementation(async (_data, devId) =>
+        Promise.resolve({
+          data: {
+            user: { email: 'test@example.com', name: 'Test' },
+            device_id: devId ?? customDeviceId,
+            token: 'token',
+            expires_at: new Date().toISOString(),
+          },
+        })
+      );
+
+      const req = makeBunRequest('http://localhost/auth/register', {
+        method: 'POST',
+        body: formWithDevice,
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+      expect(res.status).toBe(HTTP_CREATED);
+      expect(mockRegister).toHaveBeenCalledWith(expect.anything(), customDeviceId);
     });
   });
 
@@ -165,9 +206,11 @@ describe('authRoutes', () => {
     });
 
     test('happy path works', async () => {
+      const deviceId = randomUUIDv7();
       const result = {
         data: {
-          user: { id: randomUUIDv7(), email: 'test@example.com', name: 'Test' },
+          user: { email: 'test@example.com', name: 'Test' },
+          device_id: deviceId,
           token: 'token',
           expires_at: new Date().toISOString(),
         },
@@ -189,6 +232,7 @@ describe('authRoutes', () => {
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: deviceId,
         },
       });
       expect(mockAttachSessionCookie).toHaveBeenCalledOnce();
@@ -198,8 +242,39 @@ describe('authRoutes', () => {
           email: result.data.user.email,
           name: result.data.user.name,
           expires_at: result.data.expires_at,
+          device_id: deviceId,
         },
       });
+      expect(mockAttachDeviceIdCookie).toHaveBeenCalledOnce();
+      expect(mockAttachDeviceIdCookie).toHaveBeenCalledWith(req, res, deviceId);
+    });
+
+    test('passes existing device id from form to login', async () => {
+      const customDeviceId = randomUUIDv7();
+      const formWithDevice = new FormData();
+      formWithDevice.append('email', 'test@example.com');
+      formWithDevice.append('password', 'Password1!');
+      formWithDevice.append('device_id', customDeviceId);
+
+      mockLogin.mockImplementation(async ({ deviceId }) =>
+        Promise.resolve({
+          data: {
+            user: { email: 'test@example.com', name: 'Test' },
+            device_id: deviceId ?? customDeviceId,
+            token: 'token',
+            expires_at: new Date().toISOString(),
+          },
+        })
+      );
+
+      const req = makeBunRequest('http://localhost/auth/login', {
+        method: 'POST',
+        body: formWithDevice,
+      });
+      req.headers.append('Origin', ORIGIN);
+
+      const res = await POST(req);
+      expect(res.status).toBe(HTTP_CREATED);
     });
   });
 

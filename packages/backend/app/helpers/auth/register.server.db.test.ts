@@ -19,16 +19,22 @@ describe('register.server (db)', () => {
 
     expect(result.data?.user.email).toBe(user.email);
     expect(result.data?.user.name).toBe(user.name);
+    expect(result.data?.device_id).toBeDefined();
     expect(result.data?.token).toBeDefined();
     expect(result.data?.expires_at).toBeDefined();
 
-    const userId = result.data?.user.id;
-    const rows = await db<{ password_hash: string }[]>`
-      SELECT password_hash FROM users WHERE id = ${userId}::uuid
+    const rows = await db<{ id: number; password_hash: string }[]>`
+      SELECT id, password_hash FROM users WHERE email = ${user.email}
     `;
-    const passwordHash = rows[0]?.password_hash ?? '';
-    const isPasswordValid = await password.verify(user.password, passwordHash);
+    const userRow = rows[0];
+    expect(userRow).toBeDefined();
+    const isPasswordValid = await password.verify(user.password, userRow?.password_hash ?? '');
     expect(isPasswordValid).toBe(true);
+
+    const counterRows = await db<{ last_event_id: number }[]>`
+      SELECT last_event_id FROM quiz_events_counters WHERE user_id = ${userRow?.id}
+    `;
+    expect(counterRows[0]?.last_event_id).toBe(0);
 
     const duplicateResult = await register(user);
     expect(duplicateResult.data).toBeUndefined();

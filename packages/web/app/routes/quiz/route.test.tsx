@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Route } from './+types/route';
 import { appendQuizEvent } from '../../helpers/append-quiz-event';
 import { updateQuizEvent } from '../../helpers/update-quiz-event';
+import { QUIZ_RESULT } from '../../types/quiz';
 import Page, { meta } from './route';
 
 vi.mock('../../helpers/append-quiz-event', () => ({
@@ -80,7 +81,7 @@ describe('Quiz Route', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, 'correct');
+      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.CORRECT);
     });
 
     expect(screen.getByText(/correct! answer:/i)).toBeInTheDocument();
@@ -105,7 +106,7 @@ describe('Quiz Route', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, 'wrong');
+      expect(updateQuizEvent).toHaveBeenCalledWith(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.WRONG);
     });
 
     expect(screen.getByText(/the reading is/i)).toBeInTheDocument();

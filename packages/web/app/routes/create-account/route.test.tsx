@@ -50,6 +50,7 @@ vi.mock('~/endpoints/auth/register', () => ({
 
 describe('Create Account Route', () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.restoreAllMocks();
     mockActionData = null;
     mockIsSubmitting = false;
@@ -99,7 +100,7 @@ describe('Create Account Route', () => {
       return render(<RouterProvider router={router} />);
     }
 
-    it('renders initial form with inputs and create account button', () => {
+    it('renders initial form with inputs and create account button when no device_id exists', () => {
       renderRoute();
 
       const backLink = screen.getByRole('link', { name: /back/i });
@@ -111,9 +112,21 @@ describe('Create Account Route', () => {
       expect(screen.getByRole('textbox', { name: 'Email' })).toBeInTheDocument();
       expect(screen.getByLabelText('Password')).toBeInTheDocument();
 
+      const hiddenInput = document.querySelector('input[name="device_id"]');
+      expect(hiddenInput).toBeDisabled();
+
       const submitButton = screen.getByRole('button', { name: 'Create account' });
       expect(submitButton).toBeInTheDocument();
       expect(submitButton).not.toBeDisabled();
+    });
+
+    it('renders hidden device_id input when device_id exists in storage', () => {
+      localStorage.setItem('kana_device_id', '018f0000-0000-7000-8000-000000000001');
+      renderRoute();
+
+      const hiddenInput = document.querySelector('input[name="device_id"]');
+      expect(hiddenInput).toHaveValue('018f0000-0000-7000-8000-000000000001');
+      expect(hiddenInput).not.toBeDisabled();
     });
 
     it('renders non-field error alert when actionData contains nonFieldError', () => {

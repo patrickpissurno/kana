@@ -26,22 +26,26 @@ export const registerSchema = z.object({
     .regex(REGEX_NUMBER, PASSWORD_ERROR_MESSAGE)
     .regex(REGEX_SPECIAL, PASSWORD_ERROR_MESSAGE),
   name: z.string(NAME_ERROR_MESSAGE).trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
+  device_id: z.uuid().optional(),
 });
 
 export const loginCredentialsSchema = z.object({
   email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
   password: z.string(PASSWORD_EMPTY_ERROR_MESSAGE).trim().min(1, PASSWORD_EMPTY_ERROR_MESSAGE),
+  device_id: z.uuid().optional(),
 });
 
 export const loginSchema = loginCredentialsSchema.or(
   z.object({
     email: z.undefined().optional(),
     password: z.undefined().optional(),
+    device_id: z.uuid().optional(),
   })
 );
 
 export const tokenDataSchema = z.object({
-  user_id: z.uuid(),
+  user_id: z.number().int().positive(),
+  device_id: z.uuid(),
   expires_at: z.iso.datetime(),
 });
 
@@ -49,6 +53,7 @@ export const userSchema = z.object({
   email: z.string(EMAIL_ERROR_MESSAGE).trim().pipe(z.email(EMAIL_ERROR_MESSAGE)),
   name: z.string(NAME_ERROR_MESSAGE).trim().min(MIN_NAME_LENGTH, NAME_ERROR_MESSAGE),
   expires_at: z.iso.datetime().optional(),
+  device_id: z.uuid().optional(),
 });
 
 export type RegisterPayload = z.infer<typeof registerSchema>;

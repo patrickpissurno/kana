@@ -26,11 +26,12 @@ describe('auth schemas', () => {
   });
 
   describe('registerSchema', () => {
-    it('accepts valid input and trims strings', () => {
+    it('accepts valid input with optional device_id and trims strings', () => {
       const parsed = registerSchema.safeParse({
         email: '  test@example.com  ',
         password: '  Password1!  ',
         name: '  Test User  ',
+        device_id: VALID_UUID,
       });
 
       expect(parsed.success).toBe(true);
@@ -38,6 +39,7 @@ describe('auth schemas', () => {
         expect(parsed.data.email).toBe('test@example.com');
         expect(parsed.data.password).toBe('Password1!');
         expect(parsed.data.name).toBe('Test User');
+        expect(parsed.data.device_id).toBe(VALID_UUID);
       }
     });
 
@@ -145,12 +147,14 @@ describe('auth schemas', () => {
       const parsed = loginCredentialsSchema.safeParse({
         email: '  test@example.com  ',
         password: '  secret123  ',
+        device_id: VALID_UUID,
       });
 
       expect(parsed.success).toBe(true);
       if (parsed.success) {
         expect(parsed.data.email).toBe('test@example.com');
         expect(parsed.data.password).toBe('secret123');
+        expect(parsed.data.device_id).toBe(VALID_UUID);
       }
     });
 
@@ -176,6 +180,7 @@ describe('auth schemas', () => {
       const parsed = loginSchema.safeParse({
         email: '  test@example.com  ',
         password: '  Secret123!  ',
+        device_id: VALID_UUID,
       });
 
       expect(parsed.success).toBe(true);
@@ -194,6 +199,7 @@ describe('auth schemas', () => {
       const parsed = loginSchema.safeParse({
         email: undefined,
         password: undefined,
+        device_id: VALID_UUID,
       });
       expect(parsed.success).toBe(true);
     });
@@ -216,23 +222,38 @@ describe('auth schemas', () => {
   });
 
   describe('tokenDataSchema', () => {
-    it('accepts valid uuid and iso datetime', () => {
+    const VALID_USER_ID = 42;
+    const ZERO_USER_ID = 0;
+
+    it('accepts valid integer user_id, uuid device_id, and iso datetime', () => {
       const nowIso = new Date().toISOString();
       const parsed = tokenDataSchema.safeParse({
-        user_id: VALID_UUID,
+        user_id: VALID_USER_ID,
+        device_id: VALID_UUID,
         expires_at: nowIso,
       });
 
       expect(parsed.success).toBe(true);
       if (parsed.success) {
-        expect(parsed.data.user_id).toBe(VALID_UUID);
+        expect(parsed.data.user_id).toBe(VALID_USER_ID);
+        expect(parsed.data.device_id).toBe(VALID_UUID);
         expect(parsed.data.expires_at).toBe(nowIso);
       }
     });
 
-    it('rejects invalid uuid', () => {
+    it('rejects non-positive user_id', () => {
       const parsed = tokenDataSchema.safeParse({
-        user_id: 'not-a-uuid',
+        user_id: ZERO_USER_ID,
+        device_id: VALID_UUID,
+        expires_at: new Date().toISOString(),
+      });
+      expect(parsed.success).toBe(false);
+    });
+
+    it('rejects invalid device_id uuid', () => {
+      const parsed = tokenDataSchema.safeParse({
+        user_id: VALID_USER_ID,
+        device_id: 'not-a-uuid',
         expires_at: new Date().toISOString(),
       });
       expect(parsed.success).toBe(false);
@@ -240,7 +261,8 @@ describe('auth schemas', () => {
 
     it('rejects invalid iso datetime string', () => {
       const parsed = tokenDataSchema.safeParse({
-        user_id: VALID_UUID,
+        user_id: VALID_USER_ID,
+        device_id: VALID_UUID,
         expires_at: 'invalid-date',
       });
       expect(parsed.success).toBe(false);
@@ -248,12 +270,13 @@ describe('auth schemas', () => {
   });
 
   describe('userSchema', () => {
-    it('accepts valid user with optional expires_at', () => {
+    it('accepts valid user with optional expires_at and device_id', () => {
       const nowIso = new Date().toISOString();
       const parsed = userSchema.safeParse({
         email: '  user@example.com  ',
         name: '  User Name  ',
         expires_at: nowIso,
+        device_id: VALID_UUID,
       });
 
       expect(parsed.success).toBe(true);
@@ -261,10 +284,11 @@ describe('auth schemas', () => {
         expect(parsed.data.email).toBe('user@example.com');
         expect(parsed.data.name).toBe('User Name');
         expect(parsed.data.expires_at).toBe(nowIso);
+        expect(parsed.data.device_id).toBe(VALID_UUID);
       }
     });
 
-    it('accepts valid user without expires_at', () => {
+    it('accepts valid user without expires_at or device_id', () => {
       const parsed = userSchema.safeParse({
         email: 'user@example.com',
         name: 'User Name',

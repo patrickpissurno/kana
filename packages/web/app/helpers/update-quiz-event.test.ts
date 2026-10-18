@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { QUIZ_RESULT } from '../types/quiz';
 import { appendQuizEvent } from './append-quiz-event';
 import { updateQuizEvent } from './update-quiz-event';
 
@@ -8,11 +9,11 @@ const TEST_EVENT_TIMESTAMP = 1_700_000_000_000;
 describe('updateQuizEvent', () => {
   it('updates an existing event result successfully', async () => {
     const timestamp = await appendQuizEvent('あ');
-    await expect(updateQuizEvent(timestamp, 'correct')).resolves.toBeUndefined();
+    await expect(updateQuizEvent(timestamp, QUIZ_RESULT.CORRECT)).resolves.toBeUndefined();
   });
 
   it('rejects when the event timestamp is not found', async () => {
-    await expect(updateQuizEvent(NON_EXISTENT_TIMESTAMP, 'wrong')).rejects.toThrow(
+    await expect(updateQuizEvent(NON_EXISTENT_TIMESTAMP, QUIZ_RESULT.WRONG)).rejects.toThrow(
       `Quiz event with timestamp ${NON_EXISTENT_TIMESTAMP} not found`
     );
   });
@@ -63,7 +64,9 @@ describe('updateQuizEvent', () => {
       return req;
     });
 
-    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, 'correct')).rejects.toThrow('Get failed');
+    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.CORRECT)).rejects.toThrow(
+      'Get failed'
+    );
     indexedDB.open = originalOpen;
   });
 
@@ -112,7 +115,7 @@ describe('updateQuizEvent', () => {
       return req;
     });
 
-    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, 'correct')).rejects.toThrow(
+    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.CORRECT)).rejects.toThrow(
       'Failed to find quiz event'
     );
     indexedDB.open = originalOpen;
@@ -129,7 +132,7 @@ describe('updateQuizEvent', () => {
             result: {
               glyph: 'あ',
               timestamp: TEST_EVENT_TIMESTAMP,
-              result: 'skipped',
+              result: QUIZ_RESULT.SKIPPED,
             },
             error: null,
             onsuccess: null,
@@ -182,7 +185,9 @@ describe('updateQuizEvent', () => {
       return req;
     });
 
-    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, 'wrong')).rejects.toThrow('Put failed');
+    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.WRONG)).rejects.toThrow(
+      'Put failed'
+    );
     indexedDB.open = originalOpen;
   });
 
@@ -196,7 +201,7 @@ describe('updateQuizEvent', () => {
             result: {
               glyph: 'あ',
               timestamp: TEST_EVENT_TIMESTAMP,
-              result: 'skipped',
+              result: QUIZ_RESULT.SKIPPED,
             },
             error: null,
             onsuccess: null,
@@ -249,7 +254,7 @@ describe('updateQuizEvent', () => {
       return req;
     });
 
-    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, 'wrong')).rejects.toThrow(
+    await expect(updateQuizEvent(TEST_EVENT_TIMESTAMP, QUIZ_RESULT.WRONG)).rejects.toThrow(
       'Failed to update quiz event'
     );
     indexedDB.open = originalOpen;

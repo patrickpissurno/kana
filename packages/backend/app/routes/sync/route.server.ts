@@ -1,4 +1,3 @@
-import type { ServerResponse } from '@kana/helpers/types';
 import { syncQuizEventsSchema } from '@kana/helpers/sync/schemas';
 import { enforceAuthentication } from '~/helpers/auth/enforce-authentication.server';
 import { defineRoutes } from '~/helpers/define-routes.server';
@@ -10,7 +9,7 @@ import { syncQuizEvents } from '~/helpers/sync/quiz-events.server';
 export const syncRoutes = defineRoutes({
   '/sync/quiz-events': {
     POST: async (req) => {
-      const { user_id } = await enforceAuthentication(req);
+      const { user_id, device_id } = await enforceAuthentication(req);
 
       const form = await parseJSONData(req, syncQuizEventsSchema);
 
@@ -18,18 +17,22 @@ export const syncRoutes = defineRoutes({
         return makeError(form);
       }
 
-      const result = await syncQuizEvents({ data: form.data, user_id });
+      const result = await syncQuizEvents({
+        data: form.data,
+        user_id,
+        device_id,
+      });
 
-      if (!result.data) {
+      if (!result.rawJson) {
         return makeError(result);
       }
 
-      return Response.json(
-        {
-          data: result.data,
-        } satisfies ServerResponse,
-        { status: HTTP_OK }
-      );
+      return new Response(result.rawJson, {
+        status: HTTP_OK,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     },
   },
 });

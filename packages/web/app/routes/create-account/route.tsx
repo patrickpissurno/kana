@@ -7,6 +7,7 @@ import { register } from '~/endpoints/auth/register';
 import type { Route } from './+types/route';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { getDeviceId } from '../../helpers/sync-storage';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -77,6 +78,12 @@ export default function Page({}: Route.ComponentProps) {
       )}
 
       <form {...form.getFormProps()} className="flex w-full flex-col gap-4">
+        <input
+          type="hidden"
+          name="device_id"
+          defaultValue={getDeviceId() ?? undefined}
+          disabled={!getDeviceId()}
+        />
         <Field scope={form.scope('name')}>
           {(field) => (
             <div className="flex flex-col gap-1.5 text-left">

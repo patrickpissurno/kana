@@ -15,11 +15,12 @@ describe('login.server (db)', () => {
   });
 
   it('verifies credentials against real database and refreshes session via token', async () => {
-    let userId: string | undefined = undefined;
+    let deviceId: string | undefined = undefined;
     {
       const result = await register(user);
       expect(result.data?.user.email).toBe(user.email);
-      userId = result.data?.user.id;
+      expect(result.data?.device_id).toBeDefined();
+      deviceId = result.data?.device_id;
     }
 
     let refreshToken: string | undefined = undefined;
@@ -30,19 +31,21 @@ describe('login.server (db)', () => {
           password: user.password,
         },
         refreshToken: undefined,
+        deviceId,
       });
 
-      expect(result.data?.user.id).toBe(userId);
       expect(result.data?.user.email).toBe(user.email);
       expect(result.data?.user.name).toBe(user.name);
+      expect(result.data?.device_id).toBe(deviceId);
       expect(result.data?.token).toBeDefined();
       refreshToken = result.data?.token;
     }
 
     {
       const result = await login({ data: {}, refreshToken });
-      expect(result.data?.user.id).toBe(userId);
       expect(result.data?.user.email).toBe(user.email);
+      expect(result.data?.user.name).toBe(user.name);
+      expect(result.data?.device_id).toBe(deviceId);
       expect(result.data?.token).toBeDefined();
       expect(result.data?.token).not.toBe(refreshToken);
     }

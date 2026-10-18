@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
 import { loadAllQuizEvents } from '../../helpers/load-all-quiz-events';
+import { QUIZ_RESULT } from '../../types/quiz';
 import Page, { meta } from './route';
 
 vi.mock('../../helpers/load-all-quiz-events', () => ({
@@ -34,17 +35,17 @@ describe('Hiragana Route', () => {
       {
         glyph: 'あ',
         timestamp: TIMESTAMP_NOW,
-        result: 'correct',
+        result: QUIZ_RESULT.CORRECT,
       },
       {
         glyph: 'あ',
         timestamp: TIMESTAMP_LATER,
-        result: 'correct',
+        result: QUIZ_RESULT.CORRECT,
       },
       {
         glyph: 'い',
         timestamp: TIMESTAMP_NOW,
-        result: 'wrong',
+        result: QUIZ_RESULT.WRONG,
       },
     ];
 
