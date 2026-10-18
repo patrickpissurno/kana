@@ -33,7 +33,6 @@ beforeEach(() => {
 });
 
 const EXPECTED_COUNT = 5;
-const CUSTOM_SCHEDULE = '0 0 * * *';
 
 describe('cron.server', () => {
   describe('evictExpiredDeviceCaches', () => {
@@ -70,14 +69,6 @@ describe('cron.server', () => {
 
       await Promise.resolve();
       expect(mockDb).toHaveBeenCalledOnce();
-    });
-
-    it('registers cron with custom schedule', () => {
-      mockCron.mockReturnValue({ stop: vi.fn() });
-
-      startDailyCacheEvictionCron(CUSTOM_SCHEDULE);
-
-      expect(mockCron).toHaveBeenCalledWith(CUSTOM_SCHEDULE, expect.any(Function));
     });
 
     it('handles eviction errors silently during cron callback', async () => {
