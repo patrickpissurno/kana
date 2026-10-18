@@ -138,7 +138,8 @@ dist
 
 .DS_Store
 .env
-.env.staging
+.env.*
+!.env.default
 /node_modules/
 
 # React Router

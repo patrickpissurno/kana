@@ -1,0 +1,19 @@
+# Environment and database dumps
+.env
+.env.*
+*.dump
+
+# Dependencies and caches
+node_modules
+.pnpm-store
+.cache
+coverage
+
+# Git and OS
+.git
+.gitignore
+.DS_Store
+.vscode
+.husky
+.github
+.agents

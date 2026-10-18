@@ -8,8 +8,9 @@
     "dev": "BUN_PORT=3001 bun --hot ./app/index.server.ts",
     "fmt": "bun run --bun oxfmt",
     "lint": "bun run --bun oxlint",
+    "make": "bun build --compile ./app/index.server.ts --outfile ./build/kana-backend",
     "migrate": "bun run ./app/scripts/migrate.server.ts",
-    "start": "NODE_ENV=production BUN_PORT=3001 bun run ./app/index.server.ts",
+    "start": "NODE_ENV=production BUN_PORT=3001 ./build/kana-backend",
     "test": "bun run --bun vitest run",
     "typecheck": "bun run --bun tsc"
   },

@@ -1,0 +1,59 @@
+# --- Build Stage ---
+FROM oven/bun:alpine AS builder
+
+WORKDIR /monorepo
+
+# Copy dependency definitions for Docker layer caching
+COPY package.json bun.lock ./
+COPY packages/helpers/package.json ./packages/helpers/
+COPY packages/backend/package.json ./packages/backend/
+
+# Install dependencies
+RUN NODE_ENV=production bun i --frozen-lockfile
+
+# Copy application source code
+COPY . .
+
+# Build self-contained binary
+RUN NODE_ENV=production bun --filter backend make
+
+# --- Runtime Stage ---
+FROM alpine:latest
+
+# Install runtime dependencies (certificates and timezone data)
+RUN apk add --no-cache ca-certificates tzdata
+
+# Runtime environment variables
+ENV PORT=3001
+ENV HOST="0.0.0.0"
+ENV IS_DEBUG="false"
+ENV UMASK=002
+ENV TZ="America/Sao_Paulo"
+ENV PGHOST="127.0.0.1"
+ENV PGPORT="5432"
+ENV PGSSLMODE=""
+ENV PGDATABASE=""
+ENV PGUSER=""
+ENV PGPASSWORD=""
+ENV SESSION_SECRET=""
+ENV SESSION_SECRET_SALT=""
+ENV SESSION_COOKIE_DOMAIN=""
+ENV SESSION_COOKIE_NAME=""
+ENV DEVICE_ID_COOKIE_NAME=""
+ENV VITE_SESSION_COOKIE_DATA_NAME=""
+ENV CORS_VALID_ORIGINS=""
+ENV VITE_BACKEND_URL=""
+
+WORKDIR /app
+
+# Copy entrypoint and compiled binary from builder
+COPY entrypoint.sh ./entrypoint.sh
+COPY --from=builder /monorepo/packages/backend/build/kana-backend ./kana-backend
+
+RUN chmod +x ./entrypoint.sh ./kana-backend
+
+EXPOSE $PORT
+
+ENTRYPOINT ["./entrypoint.sh"]
+
+CMD ["./kana-backend"]
