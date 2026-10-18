@@ -1,0 +1,1 @@
+import{n as e}from"./schemas-C_R4acN8.js";import{n as t,r as n}from"./config-BvZF8B8M.js";function r(){let r=`${t}=`,i=document.cookie.split(`;`).map(e=>e.trim()).find(e=>e.startsWith(r));if(!i)return null;let a=i.slice(r.length),o=``;try{o=decodeURIComponent(a)}catch{return null}let s=n(o,null);if(!s)return null;let c=e.safeParse(s);return c.success?c.data:null}export{r as t};

@@ -1,0 +1,1 @@
+export{t as clientAction}from"./route-C16BmxYS.js";
