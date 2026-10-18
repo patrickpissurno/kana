@@ -68,10 +68,13 @@ export default function Page({ loaderData }: Route.ComponentProps) {
       : 'Never';
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center">
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center sm:pt-10">
       <Link
         to="/"
-        className="text-muted-foreground hover:text-foreground mb-6 self-start text-sm font-medium transition-colors select-none"
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'text-muted-foreground hover:text-foreground select-none mb-6 self-start'
+        )}
         aria-label="Home"
         draggable={false}
       >

@@ -1,6 +1,8 @@
+import { cn } from 'cn';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router';
+import { buttonVariants } from '~/components/ui/button';
 import type { GlyphItem } from '../../components/hiragana/glyph-section';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
@@ -138,7 +140,10 @@ export default function Page({}: Route.ComponentProps) {
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-6 sm:py-10">
       <Link
         to="/"
-        className="text-muted-foreground hover:text-foreground mb-5 text-sm font-medium transition-colors select-none"
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'text-muted-foreground hover:text-foreground select-none mb-5'
+        )}
         aria-label="Home"
         draggable={false}
       >

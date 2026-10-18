@@ -1,11 +1,12 @@
 import { registerSchema } from '@kana/helpers/auth/schemas';
 import { Field, useForm } from '@rvf/react-router';
+import { cn } from 'cn';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useActionData, useNavigate } from 'react-router';
 import { register } from '~/endpoints/auth/register';
 import type { Route } from './+types/route';
-import { Button } from '../../components/ui/button';
+import { Button, buttonVariants } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { getDeviceId } from '../../helpers/sync-storage';
 
@@ -50,11 +51,14 @@ export default function Page({}: Route.ComponentProps) {
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center">
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center sm:pt-10">
       <Link
         to="/profile"
-        className="text-muted-foreground hover:text-foreground mb-6 self-start text-sm font-medium transition-colors select-none"
-        aria-label="Back"
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'text-muted-foreground hover:text-foreground select-none mb-6 self-start'
+        )}
+        aria-label="Profile"
         draggable={false}
       >
         <ArrowLeft className="size-5" />
