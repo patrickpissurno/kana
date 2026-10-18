@@ -20,8 +20,8 @@ RUN NODE_ENV=production bun --filter backend make
 # --- Runtime Stage ---
 FROM alpine:latest
 
-# Install runtime dependencies (certificates and timezone data)
-RUN apk add --no-cache ca-certificates tzdata
+# Install runtime dependencies (certificates, timezone data, and C++ runtime)
+RUN apk add --no-cache ca-certificates tzdata libgcc libstdc++
 
 # Runtime environment variables
 ENV PORT=3001
