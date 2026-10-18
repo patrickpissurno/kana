@@ -1,0 +1,1 @@
+import{t as e}from"./session-data-storage-DNhZtu8A.js";import{n as t}from"./sync-storage-B-wLUnEm.js";function n(){return{user:e(),lastSyncTimestamp:t()}}export{n as clientLoader};

@@ -1,0 +1,1 @@
+import{t as e}from"./config-CBamgM0q.js";import{t}from"./endpoint-BlvfRGek.js";var n=t(async({f:t})=>t(`${e}/auth/logout`,{method:`POST`,mode:`cors`,credentials:`include`}));async function r({}){return n()}export{r as t};
