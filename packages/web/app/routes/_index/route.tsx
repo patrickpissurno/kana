@@ -15,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Page({}: Route.ComponentProps) {
   return (
     <>
-      <div className="absolute top-0 w-full max-w-xl self-center px-4 pt-6 sm:pt-10">
+      <div className="absolute top-[env(safe-area-inset-top,0px)] w-full max-w-xl self-center px-4 pt-6 sm:pt-10">
         <Link
           to="/profile"
           className={cn(
