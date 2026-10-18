@@ -73,10 +73,7 @@ describe('quiz-events.server', () => {
       .mockResolvedValueOnce(mockDbResult([]))
       .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 1 }]))
       .mockResolvedValueOnce(mockDbResult([{ last_event_id: 2 }]))
-      .mockResolvedValueOnce(
-        mockDbResult([{ payload: missingPayload, missing_bitmap: 'bitmap_hex' }])
-      )
-      .mockResolvedValueOnce(mockDbResult([]));
+      .mockResolvedValueOnce(mockDbResult([{ payload: missingPayload }]));
 
     const result = await syncQuizEvents({
       data,
@@ -89,7 +86,7 @@ describe('quiz-events.server', () => {
     });
   });
 
-  it('handles empty timestamps without running insert/update CTEs and handles null missing_bitmap', async () => {
+  it('handles empty timestamps without running insert/update CTEs', async () => {
     const data: SyncQuizEventsData = {
       timestamps: [],
       glyphs: [],
@@ -101,9 +98,7 @@ describe('quiz-events.server', () => {
     mocks.query
       .mockResolvedValueOnce(mockDbResult([{ current_cache_count: 0 }]))
       .mockResolvedValueOnce(mockDbResult([{ last_event_id: 1 }]))
-      .mockResolvedValueOnce(
-        mockDbResult([{ payload: emptyMissingPayload, missing_bitmap: null }])
-      );
+      .mockResolvedValueOnce(mockDbResult([{ payload: emptyMissingPayload }]));
 
     const result = await syncQuizEvents({
       data,

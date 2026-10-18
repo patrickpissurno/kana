@@ -115,14 +115,20 @@ export async function syncQuizEvents({
         return { rawJson: EMPTY_SYNC_RAW_JSON };
       }
 
-      const missingRows = await tx<{ payload: string; missing_bitmap: string | null }[]>`
+      const missingRows = await tx<{ payload: string }[]>`
         WITH missing AS (
           SELECT e.id, e.timestamp, e.glyph, e.result
           FROM quiz_events e
-          JOIN quiz_events_devices_cache c ON c.user_id = e.user_id AND c.device_uuid = ${device_id}::uuid
+          JOIN quiz_events_devices_cache c
+            ON c.user_id = e.user_id AND c.device_uuid = ${device_id}::uuid
           WHERE e.user_id = ${user_id}
             AND NOT rb_contains(c.synced_events, e.id)
-          ORDER BY e.timestamp ASC
+        ),
+        update_cache AS (
+          UPDATE quiz_events_devices_cache
+          SET synced_events = rb_or(synced_events, (SELECT rb_build_agg(id) FROM missing))
+          WHERE user_id = ${user_id} AND device_uuid = ${device_id}::uuid
+            AND EXISTS (SELECT 1 FROM missing)
         )
         SELECT
           json_build_object(
@@ -131,21 +137,11 @@ export async function syncQuizEvents({
               'glyphs', COALESCE(json_agg(m.glyph ORDER BY m.timestamp ASC), '[]'::json),
               'results', COALESCE(json_agg(m.result ORDER BY m.timestamp ASC), '[]'::json)
             )
-          )::text AS payload,
-          rb_build_agg(m.id) AS missing_bitmap
+          )::text AS payload
         FROM missing m
       `;
 
-      const resultRow = missingRows[0];
-      if (resultRow?.missing_bitmap) {
-        await tx`
-          UPDATE quiz_events_devices_cache
-          SET synced_events = rb_or(synced_events, ${resultRow.missing_bitmap})
-          WHERE user_id = ${user_id} AND device_uuid = ${device_id}::uuid
-        `;
-      }
-
-      return { rawJson: resultRow?.payload ?? EMPTY_SYNC_RAW_JSON };
+      return { rawJson: missingRows[0]?.payload ?? EMPTY_SYNC_RAW_JSON };
     });
   } catch {
     return {
