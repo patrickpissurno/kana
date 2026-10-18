@@ -3,7 +3,7 @@ import { publicSessionDataSchema } from '@kana/helpers/auth/schemas';
 import { safeJSONParse } from '@kana/helpers/utils/safe-json-parse';
 import { VITE_SESSION_COOKIE_DATA_NAME } from './config';
 
-export function getStoredUser(): PublicSessionData | null {
+export function getSessionData(): PublicSessionData | null {
   const prefix = `${VITE_SESSION_COOKIE_DATA_NAME}=`;
   const found = document.cookie
     .split(';')

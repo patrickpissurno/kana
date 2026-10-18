@@ -7,8 +7,8 @@ import { logout } from '~/endpoints/auth/logout';
 import type { Route } from './+types/route';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { getSessionData } from '../../helpers/session-data-storage';
 import { getLastSyncedTimestamp } from '../../helpers/sync-storage';
-import { getStoredUser } from '../../helpers/user-storage';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -24,7 +24,7 @@ export type ProfileLoaderData = {
 
 export function clientLoader(): ProfileLoaderData {
   return {
-    user: getStoredUser(),
+    user: getSessionData(),
     lastSyncTimestamp: getLastSyncedTimestamp(),
   };
 }

@@ -1,22 +1,22 @@
-import type { User } from '@kana/helpers/auth/schemas';
+import type { PublicSessionData } from '@kana/helpers/auth/schemas';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSessionData } from './session-data-storage';
 import { performQuizEventsSync } from './sync-quiz-events';
 import { useSyncOnLoad } from './use-sync-on-load';
-import { getStoredUser } from './user-storage';
 
 vi.mock('./sync-quiz-events', () => ({
   performQuizEventsSync: vi.fn(),
 }));
 
-vi.mock('./user-storage', () => ({
-  getStoredUser: vi.fn(),
+vi.mock('./session-data-storage', () => ({
+  getSessionData: vi.fn(),
 }));
 
 const mockPerformQuizEventsSync = vi.mocked(performQuizEventsSync);
-const mockGetStoredUser = vi.mocked(getStoredUser);
+const mockGetSessionData = vi.mocked(getSessionData);
 
-const TEST_USER: User = {
+const TEST_SESSION_DATA: PublicSessionData = {
   email: 'test@example.com',
   name: 'Test User',
 };
@@ -33,7 +33,7 @@ describe('useSyncOnLoad', () => {
   });
 
   it('does not trigger sync when user is not logged in', () => {
-    mockGetStoredUser.mockReturnValue(null);
+    mockGetSessionData.mockReturnValue(null);
 
     renderHook(() => useSyncOnLoad());
 
@@ -41,7 +41,7 @@ describe('useSyncOnLoad', () => {
   });
 
   it('triggers sync when user is logged in', () => {
-    mockGetStoredUser.mockReturnValue(TEST_USER);
+    mockGetSessionData.mockReturnValue(TEST_SESSION_DATA);
     mockPerformQuizEventsSync.mockResolvedValue();
 
     renderHook(() => useSyncOnLoad());
@@ -50,7 +50,7 @@ describe('useSyncOnLoad', () => {
   });
 
   it('handles sync rejection gracefully when user is logged in', () => {
-    mockGetStoredUser.mockReturnValue(TEST_USER);
+    mockGetSessionData.mockReturnValue(TEST_SESSION_DATA);
     mockPerformQuizEventsSync.mockRejectedValue(new Error('Sync failed'));
 
     renderHook(() => useSyncOnLoad());
