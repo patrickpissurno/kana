@@ -16,8 +16,8 @@ export async function evictExpiredDeviceCaches(): Promise<number> {
   return result[0]?.count ?? 0;
 }
 
-export function startDailyCacheEvictionCron(schedule: string = DAILY_CRON_SCHEDULE) {
-  return cron(schedule, () => {
+export function startDailyCacheEvictionCron() {
+  return cron(DAILY_CRON_SCHEDULE, () => {
     evictExpiredDeviceCaches().catch(() => undefined);
   });
 }

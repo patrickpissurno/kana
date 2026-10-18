@@ -1,5 +1,6 @@
 import type { User } from '@kana/helpers/auth/schemas';
 import type { BunRequest } from 'bun';
+import { publicSessionDataSchema } from '@kana/helpers/auth/schemas';
 import { Cookie } from 'bun';
 import {
   DEVICE_COOKIE_MAX_AGE_SECONDS,
@@ -51,14 +52,18 @@ export function createSessionCookie(data: SessionCookieData): [Cookie, Cookie] {
     domain: SESSION_COOKIE_DOMAIN,
   });
 
-  const sessionDataCookie = new Cookie(VITE_SESSION_COOKIE_DATA_NAME, JSON.stringify(data.user), {
-    path: '/',
-    httpOnly: false,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: SESSION_TTL_SECONDS,
-    domain: SESSION_COOKIE_DOMAIN,
-  });
+  const sessionDataCookie = new Cookie(
+    VITE_SESSION_COOKIE_DATA_NAME,
+    JSON.stringify(publicSessionDataSchema.parse(data.user)),
+    {
+      path: '/',
+      httpOnly: false,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: SESSION_TTL_SECONDS,
+      domain: SESSION_COOKIE_DOMAIN,
+    }
+  );
 
   return [sessionCookie, sessionDataCookie];
 }

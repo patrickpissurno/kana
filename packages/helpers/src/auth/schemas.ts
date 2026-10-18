@@ -56,8 +56,13 @@ export const userSchema = z.object({
   device_id: z.uuid().optional(),
 });
 
+export const publicSessionDataSchema = userSchema.omit({
+  device_id: true,
+});
+
 export type RegisterPayload = z.infer<typeof registerSchema>;
 export type LoginCredentialsPayload = z.infer<typeof loginCredentialsSchema>;
 export type LoginPayload = z.infer<typeof loginSchema>;
 export type TokenData = z.infer<typeof tokenDataSchema>;
 export type User = z.infer<typeof userSchema>;
+export type PublicSessionData = z.infer<typeof publicSessionDataSchema>;
