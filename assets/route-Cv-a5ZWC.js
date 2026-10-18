@@ -1,0 +1,1 @@
+export{t as clientAction}from"./route-X8M6CWiQ.js";
