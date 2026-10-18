@@ -1,10 +1,26 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { evictExpiredDeviceCaches, ONE_DAY_MS, startDailyCacheEvictionCron } from './cron.server';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  DAILY_CRON_SCHEDULE,
+  evictExpiredDeviceCaches,
+  startDailyCacheEvictionCron,
+} from './cron.server';
 import { db } from './db.server';
 
 vi.mock('./db.server', () => ({
   db: vi.fn(),
 }));
+
+const { mockCron } = vi.hoisted(() => ({
+  mockCron: vi.fn(),
+}));
+
+vi.mock('bun', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('bun')>();
+  return {
+    ...actual,
+    cron: mockCron,
+  };
+});
 
 const mockDb = vi.mocked(db);
 
@@ -14,15 +30,10 @@ function mockDbResult<T>(result: T[]) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
 });
 
 const EXPECTED_COUNT = 5;
-const CUSTOM_INTERVAL_MS = 5000;
+const CUSTOM_SCHEDULE = '0 0 * * *';
 
 describe('cron.server', () => {
   describe('evictExpiredDeviceCaches', () => {
@@ -44,44 +55,42 @@ describe('cron.server', () => {
   });
 
   describe('startDailyCacheEvictionCron', () => {
-    it('starts interval with default ONE_DAY_MS and triggers eviction on tick', async () => {
+    it('registers cron with default DAILY_CRON_SCHEDULE and triggers eviction on callback', async () => {
       mockDb.mockResolvedValue(mockDbResult([{ count: 2 }]));
+      const mockStop = vi.fn();
+      mockCron.mockReturnValue({ stop: mockStop });
 
-      const timer = startDailyCacheEvictionCron();
+      const job = startDailyCacheEvictionCron();
 
-      expect(mockDb).not.toHaveBeenCalled();
+      expect(mockCron).toHaveBeenCalledWith(DAILY_CRON_SCHEDULE, expect.any(Function));
+      expect(job).toEqual({ stop: mockStop });
 
-      await vi.advanceTimersByTimeAsync(ONE_DAY_MS);
+      const callback = mockCron.mock.calls[0]?.[1] as () => void;
+      callback();
 
+      await Promise.resolve();
       expect(mockDb).toHaveBeenCalledOnce();
-
-      clearInterval(timer);
     });
 
-    it('starts interval with custom intervalMs and triggers eviction', async () => {
-      mockDb.mockResolvedValue(mockDbResult([{ count: 1 }]));
+    it('registers cron with custom schedule', () => {
+      mockCron.mockReturnValue({ stop: vi.fn() });
 
-      const timer = startDailyCacheEvictionCron(CUSTOM_INTERVAL_MS);
+      startDailyCacheEvictionCron(CUSTOM_SCHEDULE);
 
-      expect(mockDb).not.toHaveBeenCalled();
-
-      await vi.advanceTimersByTimeAsync(CUSTOM_INTERVAL_MS);
-
-      expect(mockDb).toHaveBeenCalledOnce();
-
-      clearInterval(timer);
+      expect(mockCron).toHaveBeenCalledWith(CUSTOM_SCHEDULE, expect.any(Function));
     });
 
-    it('handles eviction errors silently during cron tick', async () => {
+    it('handles eviction errors silently during cron callback', async () => {
       mockDb.mockRejectedValue(new Error('Database offline'));
+      mockCron.mockReturnValue({ stop: vi.fn() });
 
-      const timer = startDailyCacheEvictionCron(CUSTOM_INTERVAL_MS);
+      startDailyCacheEvictionCron();
 
-      await vi.advanceTimersByTimeAsync(CUSTOM_INTERVAL_MS);
+      const callback = mockCron.mock.calls[0]?.[1] as () => void;
+      callback();
 
+      await Promise.resolve();
       expect(mockDb).toHaveBeenCalledOnce();
-
-      clearInterval(timer);
     });
   });
 });

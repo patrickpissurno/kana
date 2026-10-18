@@ -18,6 +18,12 @@ describe('compareCollateC', () => {
     expect(compareCollateC('abc', 'abcd')).toBeLessThan(0);
     expect(compareCollateC('abcd', 'abc')).toBeGreaterThan(0);
   });
+
+  it('handles supplementary characters (code points > 0xffff / surrogate pairs)', () => {
+    expect(compareCollateC('𠮷a', '𠮷b')).toBeLessThan(0);
+    expect(compareCollateC('𠮷', '\uF000')).toBeGreaterThan(0);
+    expect(compareCollateC('\uF000', '𠮷')).toBeLessThan(0);
+  });
 });
 
 describe('resolveEventCollision', () => {

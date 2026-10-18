@@ -1,11 +1,7 @@
+import { cron } from 'bun';
 import { db } from './db.server';
 
-const MS_PER_SECOND = 1000;
-const SECONDS_PER_MINUTE = 60;
-const MINUTES_PER_HOUR = 60;
-const HOURS_PER_DAY = 24;
-
-export const ONE_DAY_MS = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
+export const DAILY_CRON_SCHEDULE = '@daily';
 
 export async function evictExpiredDeviceCaches(): Promise<number> {
   const result = await db<{ count: number }[]>`
@@ -20,12 +16,8 @@ export async function evictExpiredDeviceCaches(): Promise<number> {
   return result[0]?.count ?? 0;
 }
 
-export function startDailyCacheEvictionCron(
-  intervalMs: number = ONE_DAY_MS
-): ReturnType<typeof setInterval> {
-  const timer = setInterval(() => {
+export function startDailyCacheEvictionCron(schedule: string = DAILY_CRON_SCHEDULE) {
+  return cron(schedule, () => {
     evictExpiredDeviceCaches().catch(() => undefined);
-  }, intervalMs);
-
-  return timer;
+  });
 }

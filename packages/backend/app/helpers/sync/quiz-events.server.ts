@@ -38,7 +38,7 @@ export async function syncQuizEvents({
             SELECT i.timestamp, i.glyph, i.result
             FROM incoming i
             LEFT JOIN quiz_events e ON e.user_id = ${user_id} AND e.timestamp = i.timestamp
-            WHERE e.timestamp IS NULL
+            WHERE e.id IS NULL
           ),
           counter_update AS (
             UPDATE quiz_events_counters
@@ -51,7 +51,7 @@ export async function syncQuizEvents({
               n.timestamp,
               n.glyph,
               n.result,
-              (SELECT base_id FROM counter_update) + (ROW_NUMBER() OVER ())::int4 AS id
+              (SELECT base_id FROM counter_update) + (ROW_NUMBER() OVER (ORDER BY timestamp))::int4 AS id
             FROM new_events n
           )
           INSERT INTO quiz_events (user_id, id, timestamp, glyph, result)

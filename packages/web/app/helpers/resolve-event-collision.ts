@@ -1,14 +1,34 @@
 import type { QuizEvent } from '../types/quiz';
 
+const SURROGATE_THRESHOLD = 0xffff;
+const SURROGATE_PAIR_CODE_UNITS = 2;
+const SINGLE_CODE_UNIT = 1;
+
 export function compareCollateC(a: string, b: string): number {
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    const diff = a.charCodeAt(i) - b.charCodeAt(i);
-    if (diff !== 0) {
-      return diff;
+  let i = 0;
+  let j = 0;
+  const lenA = a.length;
+  const lenB = b.length;
+
+  while (i < lenA && j < lenB) {
+    const cpA = a.codePointAt(i) as number;
+    const cpB = b.codePointAt(j) as number;
+
+    if (cpA !== cpB) {
+      return cpA - cpB;
     }
+
+    i += cpA > SURROGATE_THRESHOLD ? SURROGATE_PAIR_CODE_UNITS : SINGLE_CODE_UNIT;
+    j += cpB > SURROGATE_THRESHOLD ? SURROGATE_PAIR_CODE_UNITS : SINGLE_CODE_UNIT;
   }
-  return a.length - b.length;
+
+  if (i < lenA) {
+    return 1;
+  }
+  if (j < lenB) {
+    return -1;
+  }
+  return 0;
 }
 
 export function resolveEventCollision(a: QuizEvent, b: QuizEvent): QuizEvent {
