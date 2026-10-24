@@ -78,6 +78,7 @@ Gotchas:
 - **Romanization Standard:** Strict Revised Hepburn (e.g. し=`shi`, ち=`chi`, つ=`tsu`, ふ=`fu`, じ=`ji`, ぢ=`ji`, ず=`zu`, づ=`zu`, を=`wo`, ん=`n`, しゃ=`sha`, じゃ=`ja`). Case-insensitive and trimmed.
 - **Post-Quiz Flow:** Displays immediate visual feedback (success or error revealing canonical romaji) with an uncontrolled form and a "Continue" button navigating back to `/hiragana`. No direct retry or cooldown.
 - **Theme & Viewport:** Dark mode by default (`<html className="dark">`). Mobile-first responsive touch layout with virtual keyboard hints (`inputMode="text"`, `enterKeyHint="go"`, `autoCapitalize="none"`).
+- **Navigation:** Always use mode `replace` for Link, forms, and programmatic navigation.
 
 ## Spaced Repetition Score Model:
 The glyph score (0–100%) models human memory consolidation (spacing effect and Ebbinghaus forgetting curve):
