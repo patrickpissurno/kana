@@ -24,6 +24,7 @@ export function GlyphCard({
 
   return (
     <Link
+      replace
       to={`/quiz?glyph=${encodeURIComponent(glyph)}`}
       aria-label={`Practice ${glyph}`}
       className={cn(

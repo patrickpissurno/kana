@@ -17,6 +17,7 @@ export default function Page({}: Route.ComponentProps) {
     <>
       <div className="absolute top-[env(safe-area-inset-top,0px)] w-full max-w-xl self-center px-4 pt-6 sm:pt-10">
         <Link
+          replace
           to="/profile"
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'icon' }),
@@ -38,6 +39,7 @@ export default function Page({}: Route.ComponentProps) {
             </p>
           </div>
           <Link
+            replace
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg' }),

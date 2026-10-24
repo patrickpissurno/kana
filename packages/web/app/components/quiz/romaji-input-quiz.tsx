@@ -121,6 +121,7 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
             Correct! Answer: <span className="font-semibold underline">{userAnswer}</span>
           </div>
           <Link
+            replace
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg', variant: 'default' }),
@@ -147,6 +148,7 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
             )}
           </div>
           <Link
+            replace
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg', variant: 'secondary' }),

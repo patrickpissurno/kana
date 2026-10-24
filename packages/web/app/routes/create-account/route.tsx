@@ -53,12 +53,13 @@ export default function Page({}: Route.ComponentProps) {
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center sm:pt-10">
       <Link
+        replace
         to="/profile"
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
           'text-muted-foreground hover:text-foreground select-none mb-6 self-start'
         )}
-        aria-label="Profile"
+        aria-label="Back"
         draggable={false}
       >
         <ArrowLeft className="size-5" />

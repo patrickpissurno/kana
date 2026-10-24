@@ -70,6 +70,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center p-6 text-center sm:pt-10">
       <Link
+        replace
         to="/"
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
@@ -104,7 +105,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
               <p className="text-muted-foreground text-xs">Last sync: {lastSyncText}</p>
             </div>
 
-            <Form method="post" className="w-full pt-2">
+            <Form replace method="post" className="w-full pt-2">
               <Button
                 variant="outline"
                 size="lg"
@@ -138,6 +139,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
 
             <div className="flex w-full flex-col gap-3 pt-2">
               <Link
+                replace
                 to="/sign-in"
                 className={cn(
                   buttonVariants({ variant: 'default', size: 'lg' }),
@@ -148,6 +150,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
                 Sign in
               </Link>
               <Link
+                replace
                 to="/create-account"
                 className={cn(
                   buttonVariants({ variant: 'outline', size: 'lg' }),
