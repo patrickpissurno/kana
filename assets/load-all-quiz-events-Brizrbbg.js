@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./get-db-GBB6BSVU.js";async function n(){let n=await t();return new Promise((t,r)=>{let i=n.transaction([e],`readonly`).objectStore(e).getAll();i.onsuccess=()=>{t(i.result)},i.onerror=()=>{r(i.error??Error(`Failed to load quiz events`))}})}export{n as t};
