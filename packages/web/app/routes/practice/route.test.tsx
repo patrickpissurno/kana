@@ -177,11 +177,13 @@ describe('Practice Route', () => {
 
     expect(screen.getByText('Question 1 of 2')).toBeInTheDocument();
 
-    // Answer first question
+    // Answer first question with wrong option
     const allButtonsQ1 = screen.getAllByRole('button');
-    const firstOption = allButtonsQ1[0]!;
+    const wrongOption =
+      allButtonsQ1.find((btn) => btn.getAttribute('aria-label') !== 'Option あ') ??
+      allButtonsQ1[0]!;
     act(() => {
-      firstOption.click();
+      wrongOption.click();
     });
 
     await act(async () => {
