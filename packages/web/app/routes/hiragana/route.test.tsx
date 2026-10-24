@@ -66,6 +66,11 @@ describe('Hiragana Route', () => {
     await waitFor(() => {
       const aLink = screen.getByRole('link', { name: /practice あ/i });
       expect(aLink).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Practice all Hiragana' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Practice Gojūon (五十音)' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', { name: 'Practice Dakuten (濁点)' })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -81,6 +86,7 @@ describe('Hiragana Route', () => {
     expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /practice あ/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Practice all Hiragana' })).not.toBeInTheDocument();
     });
   });
 

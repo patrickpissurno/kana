@@ -13,6 +13,7 @@ import { isCooldownActive } from '../../helpers/is-cooldown-active';
 import { isPracticedToday } from '../../helpers/is-practiced-today';
 import { loadAllQuizEvents } from '../../helpers/load-all-quiz-events';
 import { shuffleArray } from '../../helpers/shuffle-array';
+import { QUIZ_RESULT } from '../../types/quiz';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,6 +27,7 @@ type SectionState = {
   title: string;
   description: string;
   entries: GlyphItem[];
+  canPractice: boolean;
 };
 
 const INITIAL_SCORE = 0;
@@ -34,6 +36,7 @@ const CANONICAL_SECTIONS: SectionState[] = HIRAGANA_SECTIONS.map((section) => ({
   id: section.id,
   title: section.title,
   description: section.description,
+  canPractice: false,
   entries: section.entries.map((entry) => ({
     glyph: entry.glyph,
     score: INITIAL_SCORE,
@@ -57,6 +60,7 @@ function getSessionSections(): SectionState[] {
       id: section.id,
       title: section.title,
       description: section.description,
+      canPractice: false,
       entries,
     };
   });
@@ -102,8 +106,12 @@ export default function Page({}: Route.ComponentProps) {
         const baseline = getSessionSections();
 
         const updated = baseline.map((section) => {
+          let hasLearned = false;
           const entries = section.entries.map((entry) => {
             const glyphEvents = eventsByGlyph.get(entry.glyph) ?? [];
+            if (!hasLearned && glyphEvents.some((e) => e.result === QUIZ_RESULT.CORRECT)) {
+              hasLearned = true;
+            }
             const score = calculateGlyphScore(glyphEvents);
             const practiced = isPracticedToday(glyphEvents);
             const cooldown = isCooldownActive(glyphEvents);
@@ -119,6 +127,7 @@ export default function Page({}: Route.ComponentProps) {
 
           return {
             ...section,
+            canPractice: hasLearned,
             entries,
           };
         });
@@ -136,6 +145,8 @@ export default function Page({}: Route.ComponentProps) {
     };
   }, [activationKey]);
 
+  const canPracticeAll = !loading && sections.some((section) => section.canPractice);
+
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-6 sm:py-10">
       <Link
@@ -151,21 +162,35 @@ export default function Page({}: Route.ComponentProps) {
         <ArrowLeft className="size-5" />
       </Link>
 
-      <header className="mb-8 ">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-          ひらがな Hiragana
-        </h1>
-        <p className="text-muted-foreground text-sm">Select any character to practice</p>
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+            ひらがな Hiragana
+          </h1>
+          <p className="text-muted-foreground text-sm">Select any character to practice</p>
+        </div>
+        {canPracticeAll && (
+          <Link
+            to="/practice?kind=hiragana"
+            className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'select-none')}
+            aria-label="Practice all Hiragana"
+            draggable={false}
+          >
+            Practice
+          </Link>
+        )}
       </header>
 
       <div className="flex flex-col gap-6">
         {sections.map((section) => (
           <GlyphSection
             key={section.id}
+            sectionId={section.id}
             title={section.title}
             description={section.description}
             entries={section.entries}
             loading={loading}
+            canPractice={section.canPractice}
           />
         ))}
       </div>
