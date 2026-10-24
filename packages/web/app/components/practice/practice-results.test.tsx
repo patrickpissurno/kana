@@ -38,7 +38,7 @@ describe('PracticeResults', () => {
     );
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Practice Complete' })
+      screen.getByRole('heading', { level: 1, name: 'Practice complete' })
     ).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();

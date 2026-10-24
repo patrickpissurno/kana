@@ -150,6 +150,7 @@ export default function Page({}: Route.ComponentProps) {
           key={currentGlyph}
           glyph={currentGlyph}
           scopeEntries={scopeEntries}
+          learnedGlyphs={queue}
           questionNumber={currentIndex + 1}
           totalQuestions={queue.length}
           onAnswer={handleAnswer}

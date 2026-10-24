@@ -209,9 +209,9 @@ describe('Practice Route', () => {
 
     // Practice complete results screen
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Practice Complete' })
+      screen.getByRole('heading', { level: 1, name: 'Practice complete' })
     ).toBeInTheDocument();
-    expect(screen.getByText('Glyphs Shown')).toBeInTheDocument();
+    expect(screen.getByText('Total questions')).toBeInTheDocument();
   });
 
   it('progresses through questions for all-hiragana scope with correct answers', async () => {
@@ -239,7 +239,7 @@ describe('Practice Route', () => {
     });
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Practice Complete' })
+      screen.getByRole('heading', { level: 1, name: 'Practice complete' })
     ).toBeInTheDocument();
   });
 });

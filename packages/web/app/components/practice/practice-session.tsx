@@ -11,6 +11,7 @@ import { Progress } from '../ui/progress';
 export type PracticeSessionProps = {
   glyph: string;
   scopeEntries: HiraganaEntry[];
+  learnedGlyphs: string[];
   questionNumber: number;
   totalQuestions: number;
   onAnswer: (result: { isCorrect: boolean; durationMs: number }) => void;
@@ -22,27 +23,43 @@ const COUNTDOWN_TICK_MS = 100;
 const MS_PER_SECOND = 1000;
 const PERCENT_MAX = 100;
 const DISTRACTOR_COUNT = 3;
+const MIN_LEARNED_FOR_RESTRICTED_OPTIONS = 10;
 
 function calculateElapsedMs(startTime: number): number {
   return Math.max(0, Math.round(performance.now() - startTime));
 }
 
-function generateChoices(targetGlyph: string, scopeEntries: HiraganaEntry[]): string[] {
+function generateChoices(
+  targetGlyph: string,
+  scopeEntries: HiraganaEntry[],
+  learnedGlyphs: string[]
+): string[] {
   const targetEntry = HIRAGANA_MAP.get(targetGlyph);
   const targetRomaji = targetEntry?.romaji ?? '';
 
-  let candidates = scopeEntries.filter(
-    (entry) => entry.glyph !== targetGlyph && entry.romaji !== targetRomaji
-  );
+  const useLearnedPool = learnedGlyphs.length >= MIN_LEARNED_FOR_RESTRICTED_OPTIONS;
 
-  if (candidates.length < DISTRACTOR_COUNT) {
-    candidates = HIRAGANA_ENTRIES.filter(
-      (entry) => entry.glyph !== targetGlyph && entry.romaji !== targetRomaji
-    );
-  }
+  const initialCandidates = useLearnedPool
+    ? learnedGlyphs.filter((candidateGlyph) => {
+        if (candidateGlyph === targetGlyph) {
+          return false;
+        }
+        const entry = HIRAGANA_MAP.get(candidateGlyph);
+        return entry ? entry.romaji !== targetRomaji : true;
+      })
+    : scopeEntries
+        .filter((entry) => entry.glyph !== targetGlyph && entry.romaji !== targetRomaji)
+        .map((entry) => entry.glyph);
+
+  const candidates =
+    initialCandidates.length < DISTRACTOR_COUNT
+      ? HIRAGANA_ENTRIES.filter(
+          (entry) => entry.glyph !== targetGlyph && entry.romaji !== targetRomaji
+        ).map((entry) => entry.glyph)
+      : initialCandidates;
 
   const shuffledCandidates = shuffleArray(candidates);
-  const distractors = shuffledCandidates.slice(0, DISTRACTOR_COUNT).map((entry) => entry.glyph);
+  const distractors = shuffledCandidates.slice(0, DISTRACTOR_COUNT);
 
   return shuffleArray([targetGlyph, ...distractors]);
 }
@@ -50,11 +67,12 @@ function generateChoices(targetGlyph: string, scopeEntries: HiraganaEntry[]): st
 export function PracticeSession({
   glyph,
   scopeEntries,
+  learnedGlyphs,
   questionNumber,
   totalQuestions,
   onAnswer,
 }: PracticeSessionProps) {
-  const [choices] = useState(() => generateChoices(glyph, scopeEntries));
+  const [choices] = useState(() => generateChoices(glyph, scopeEntries, learnedGlyphs));
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [countdownRemainingMs, setCountdownRemainingMs] = useState<number>(0);
   const [totalCountdownMs, setTotalCountdownMs] = useState<number>(0);

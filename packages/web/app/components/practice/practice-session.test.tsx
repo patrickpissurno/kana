@@ -15,12 +15,28 @@ vi.mock('../../helpers/update-quiz-event', () => ({
 }));
 
 const GOJUON_ENTRIES = HIRAGANA_SECTIONS[0]?.entries ?? [];
+const DAKUTEN_ENTRIES = HIRAGANA_SECTIONS[1]?.entries ?? [];
 const QUESTION_ONE = 1;
 const TOTAL_FIVE = 5;
 const TIMESTAMP_MOCK = 1_700_000_000_000;
 const COUNTDOWN_SUCCESS_MS = 3000;
 const COUNTDOWN_ERROR_MS = 5000;
 const EXPECTED_BUTTON_COUNT = 4;
+const DEFAULT_LEARNED = ['あ'];
+const TEN_LEARNED_GLYPHS = ['あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ'];
+const HOMOPHONE_LEARNED_GLYPHS = [
+  'ぢ',
+  'じ',
+  'い',
+  'う',
+  'え',
+  'お',
+  'か',
+  'き',
+  'く',
+  'け',
+  'unknown_glyph',
+];
 
 describe('PracticeSession', () => {
   beforeEach(() => {
@@ -37,6 +53,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -81,6 +98,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -112,6 +130,75 @@ describe('PracticeSession', () => {
     });
   });
 
+  it('selects distractors only from learnedGlyphs when learned count is 10 or more', () => {
+    vi.mocked(appendQuizEvent).mockResolvedValue(TIMESTAMP_MOCK);
+    const onAnswer = vi.fn<(_result: { isCorrect: boolean; durationMs: number }) => void>();
+
+    render(
+      <PracticeSession
+        glyph="あ"
+        scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={TEN_LEARNED_GLYPHS}
+        questionNumber={QUESTION_ONE}
+        totalQuestions={TOTAL_FIVE}
+        onAnswer={onAnswer}
+      />
+    );
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(EXPECTED_BUTTON_COUNT);
+
+    for (const button of buttons) {
+      const label = button.getAttribute('aria-label')?.replace('Option ', '');
+      expect(TEN_LEARNED_GLYPHS).toContain(label);
+    }
+  });
+
+  it('filters out target homophones and includes unknown glyphs when using learned pool', () => {
+    vi.mocked(appendQuizEvent).mockResolvedValue(TIMESTAMP_MOCK);
+    const onAnswer = vi.fn<(_result: { isCorrect: boolean; durationMs: number }) => void>();
+
+    render(
+      <PracticeSession
+        glyph="ぢ"
+        scopeEntries={DAKUTEN_ENTRIES}
+        learnedGlyphs={HOMOPHONE_LEARNED_GLYPHS}
+        questionNumber={QUESTION_ONE}
+        totalQuestions={TOTAL_FIVE}
+        onAnswer={onAnswer}
+      />
+    );
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(EXPECTED_BUTTON_COUNT);
+
+    // じ shares the same romaji 'ji' with ぢ and must not appear as a choice
+    const jiButton = screen.queryByRole('button', { name: 'Option じ' });
+    expect(jiButton).toBeNull();
+  });
+
+  it('filters out scope homophones when learned count is fewer than 10', () => {
+    vi.mocked(appendQuizEvent).mockResolvedValue(TIMESTAMP_MOCK);
+    const onAnswer = vi.fn<(_result: { isCorrect: boolean; durationMs: number }) => void>();
+
+    render(
+      <PracticeSession
+        glyph="ぢ"
+        scopeEntries={DAKUTEN_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
+        questionNumber={QUESTION_ONE}
+        totalQuestions={TOTAL_FIVE}
+        onAnswer={onAnswer}
+      />
+    );
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(EXPECTED_BUTTON_COUNT);
+
+    const jiButton = screen.queryByRole('button', { name: 'Option じ' });
+    expect(jiButton).toBeNull();
+  });
+
   it('falls back to HIRAGANA_ENTRIES when scopeEntries has fewer than 3 candidates', () => {
     vi.mocked(appendQuizEvent).mockResolvedValue(TIMESTAMP_MOCK);
     const onAnswer = vi.fn<(_result: { isCorrect: boolean; durationMs: number }) => void>();
@@ -120,6 +207,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={[]}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -138,6 +226,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -165,6 +254,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -191,6 +281,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="あ"
         scopeEntries={GOJUON_ENTRIES}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
@@ -219,6 +310,7 @@ describe('PracticeSession', () => {
       <PracticeSession
         glyph="unknown"
         scopeEntries={[]}
+        learnedGlyphs={DEFAULT_LEARNED}
         questionNumber={QUESTION_ONE}
         totalQuestions={TOTAL_FIVE}
         onAnswer={onAnswer}
