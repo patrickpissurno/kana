@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEVICE_ID_STORAGE_KEY,
   getDeviceId,
@@ -15,6 +15,20 @@ const TEST_DEVICE_ID = '018f0000-0000-7000-8000-000000000001';
 describe('sync-storage', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe('when localStorage is undefined', () => {
+    it('handles undefined localStorage gracefully', () => {
+      vi.stubGlobal('localStorage', undefined);
+      expect(getLastSyncedTimestamp()).toBeNull();
+      expect(() => setLastSyncedTimestamp(VALID_TIMESTAMP)).not.toThrow();
+      expect(getDeviceId()).toBeNull();
+      expect(() => setDeviceId(TEST_DEVICE_ID)).not.toThrow();
+    });
   });
 
   describe('getLastSyncedTimestamp', () => {
