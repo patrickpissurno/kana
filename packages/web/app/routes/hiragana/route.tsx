@@ -171,6 +171,7 @@ export default function Page({}: Route.ComponentProps) {
         </div>
         {canPracticeAll && (
           <Link
+            replace
             to="/practice?kind=hiragana"
             className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'select-none')}
             aria-label="Practice all Hiragana"

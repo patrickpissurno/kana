@@ -36,6 +36,7 @@ export function GlyphSection({
         </div>
         {canPractice && sectionId && (
           <Link
+            replace
             to={`/practice?kind=hiragana&section=${sectionId}`}
             className={cn(
               buttonVariants({ variant: 'outline', size: 'sm' }),
