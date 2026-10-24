@@ -19,7 +19,7 @@ const DAKUTEN_ENTRIES = HIRAGANA_SECTIONS[1]?.entries ?? [];
 const QUESTION_ONE = 1;
 const TOTAL_FIVE = 5;
 const TIMESTAMP_MOCK = 1_700_000_000_000;
-const COUNTDOWN_SUCCESS_MS = 3000;
+const COUNTDOWN_SUCCESS_MS = 2000;
 const COUNTDOWN_ERROR_MS = 5000;
 const EXPECTED_BUTTON_COUNT = 4;
 const DEFAULT_LEARNED = ['あ'];
@@ -76,7 +76,7 @@ describe('PracticeSession', () => {
     });
 
     expect(updateQuizEvent).toHaveBeenCalledWith(TIMESTAMP_MOCK, QUIZ_RESULT.CORRECT);
-    expect(screen.getByText(/Next in 3s/i)).toBeInTheDocument();
+    expect(screen.getByText(/Next in 2s/i)).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(COUNTDOWN_SUCCESS_MS);

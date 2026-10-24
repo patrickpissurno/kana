@@ -17,7 +17,7 @@ export type PracticeSessionProps = {
   onAnswer: (result: { isCorrect: boolean; durationMs: number }) => void;
 };
 
-const SUCCESS_COUNTDOWN_MS = 3000;
+const SUCCESS_COUNTDOWN_MS = 2000;
 const ERROR_COUNTDOWN_MS = 5000;
 const COUNTDOWN_TICK_MS = 100;
 const MS_PER_SECOND = 1000;
