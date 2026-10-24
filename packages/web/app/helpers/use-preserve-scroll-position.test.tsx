@@ -36,7 +36,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: (next) => next.pathname === '/quiz',
-        shouldClear: (next) => next.pathname === '/home',
       };
       usePreserveScrollPosition(config);
       const navigate = useNavigate();
@@ -61,7 +60,7 @@ describe('usePreserveScrollPosition', () => {
     expect(getScrollPositionForTesting(TEST_KEY)).toBe(SCROLL_Y_500);
   });
 
-  it('clears scroll position when shouldClear returns true on navigation', () => {
+  it('clears scroll position when shouldSave returns false on navigation', () => {
     Object.defineProperty(window, 'scrollY', {
       value: SCROLL_Y_500,
       configurable: true,
@@ -72,7 +71,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: (next) => next.pathname === '/quiz',
-        shouldClear: (next) => next.pathname === '/home',
       };
       usePreserveScrollPosition(config);
       const navigate = useNavigate();
@@ -99,43 +97,9 @@ describe('usePreserveScrollPosition', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go Quiz' }));
     expect(getScrollPositionForTesting(TEST_KEY)).toBe(SCROLL_Y_500);
 
-    // Re-render source and navigate to clear target
+    // Re-render source and navigate to non-matching target
     render(<Stub initialEntries={['/source']} />);
     fireEvent.click(screen.getByRole('button', { name: 'Go Home' }));
-    expect(getScrollPositionForTesting(TEST_KEY)).toBeUndefined();
-  });
-
-  it('does not save or clear when neither condition matches', () => {
-    Object.defineProperty(window, 'scrollY', {
-      value: SCROLL_Y_500,
-      configurable: true,
-      writable: true,
-    });
-
-    function SourceComponent() {
-      const config: UsePreserveScrollPositionProps = {
-        key: TEST_KEY,
-        shouldSave: (next) => next.pathname === '/quiz',
-        shouldClear: (next) => next.pathname === '/home',
-      };
-      usePreserveScrollPosition(config);
-      const navigate = useNavigate();
-      return (
-        <button type="button" onClick={() => safeNavigate(navigate, '/other')}>
-          Go Other
-        </button>
-      );
-    }
-
-    const Stub = createRoutesStub([
-      { path: '/source', Component: SourceComponent },
-      { path: '/other', Component: () => null },
-    ]);
-
-    render(<Stub initialEntries={['/source']} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Go Other' }));
-
     expect(getScrollPositionForTesting(TEST_KEY)).toBeUndefined();
   });
 
@@ -150,7 +114,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: (next) => next.pathname === '/destination',
-        shouldClear: () => false,
       };
       usePreserveScrollPosition(config);
       const navigate = useNavigate();
@@ -165,7 +128,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: () => false,
-        shouldClear: () => false,
       };
       usePreserveScrollPosition(config);
       return null;
@@ -200,7 +162,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: () => false,
-        shouldClear: () => false,
       };
       usePreserveScrollPosition(config);
       return null;
@@ -244,7 +205,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: () => false,
-        shouldClear: () => false,
       };
       usePreserveScrollPosition(config);
       return null;
@@ -276,7 +236,6 @@ describe('usePreserveScrollPosition', () => {
       const config: UsePreserveScrollPositionProps = {
         key: TEST_KEY,
         shouldSave: () => true,
-        shouldClear: () => false,
       };
       usePreserveScrollPosition(config);
       const navigate = useNavigate();

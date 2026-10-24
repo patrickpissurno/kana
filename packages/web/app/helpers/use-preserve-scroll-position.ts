@@ -5,7 +5,6 @@ import { useBlocker, useLocation } from 'react-router';
 export type UsePreserveScrollPositionProps = {
   key: string;
   shouldSave: (next: Location) => boolean;
-  shouldClear: (next: Location) => boolean;
 };
 
 const scrollPositions = new Map<string, number>();
@@ -21,14 +20,13 @@ export function getScrollPositionForTesting(key: string): number | undefined {
 export function usePreserveScrollPosition({
   key,
   shouldSave,
-  shouldClear,
 }: UsePreserveScrollPositionProps): void {
   const location = useLocation();
 
   useBlocker(({ nextLocation }) => {
     if (shouldSave(nextLocation)) {
       scrollPositions.set(key, Math.max(0, Math.round(window.scrollY)));
-    } else if (shouldClear(nextLocation)) {
+    } else {
       scrollPositions.delete(key);
     }
     return false;

@@ -92,7 +92,6 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
 const SCROLL_CONFIG: UsePreserveScrollPositionProps = {
   key: 'hiragana',
   shouldSave: (next) => next.pathname === '/quiz' || next.pathname === '/practice',
-  shouldClear: (next) => next.pathname === '/',
 };
 
 export default function Page({}: Route.ComponentProps) {
