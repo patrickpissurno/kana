@@ -45,6 +45,8 @@ export function PracticeResults({
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-6 sm:py-10">
       <Link
         replace
+        preventScrollReset
+        state={{ restoreScroll: true }}
         to="/hiragana"
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),

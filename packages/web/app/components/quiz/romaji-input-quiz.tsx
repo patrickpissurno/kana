@@ -122,6 +122,8 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
           </div>
           <Link
             replace
+            preventScrollReset
+            state={{ restoreScroll: true }}
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg', variant: 'default' }),
@@ -149,6 +151,8 @@ export function RomajiInputQuiz({ glyph, onCorrectAnswer, onWrongAnswer }: QuizC
           </div>
           <Link
             replace
+            preventScrollReset
+            state={{ restoreScroll: true }}
             to="/hiragana"
             className={cn(
               buttonVariants({ size: 'lg', variant: 'secondary' }),

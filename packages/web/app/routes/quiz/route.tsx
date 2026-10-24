@@ -63,7 +63,13 @@ export default function Page({}: Route.ComponentProps) {
         <p className="text-muted-foreground mb-6 text-sm">
           The requested kana character was not recognized.
         </p>
-        <Link replace to="/hiragana" className="text-primary text-sm font-semibold hover:underline">
+        <Link
+          replace
+          preventScrollReset
+          state={{ restoreScroll: true }}
+          to="/hiragana"
+          className="text-primary text-sm font-semibold hover:underline"
+        >
           Return to Hiragana
         </Link>
       </main>

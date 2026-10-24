@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { useEffect, useState } from 'react';
-import { createRoutesStub, MemoryRouter, Outlet } from 'react-router';
+import { createRoutesStub, Outlet } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
@@ -18,10 +18,30 @@ const TIMESTAMP_LATER = 1700000005000;
 const INITIAL_ACTIVATION_KEY = 1000;
 const UPDATED_ACTIVATION_KEY = 2000;
 const EXPECTED_CALL_COUNT_TWICE = 2;
+const SCROLL_Y_400 = 400;
+
+function renderHiragana(initialEntries = ['/hiragana']) {
+  const Stub = createRoutesStub([
+    {
+      path: '/hiragana',
+      Component: () => <Page {...({} as unknown as Route.ComponentProps)} />,
+    },
+    {
+      path: '/quiz',
+      Component: () => null,
+    },
+    {
+      path: '/',
+      Component: () => null,
+    },
+  ]);
+  return render(<Stub initialEntries={initialEntries} />);
+}
 
 describe('Hiragana Route', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
   });
 
   it('returns expected meta tags', () => {
@@ -51,11 +71,7 @@ describe('Hiragana Route', () => {
 
     vi.mocked(loadAllQuizEvents).mockResolvedValue(mockEvents);
 
-    render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} />
-      </MemoryRouter>
-    );
+    renderHiragana();
 
     expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^Gojūon/i })).toBeInTheDocument();
@@ -77,11 +93,7 @@ describe('Hiragana Route', () => {
   it('handles IndexedDB loading failure gracefully', async () => {
     vi.mocked(loadAllQuizEvents).mockRejectedValue(new Error('DB Failed'));
 
-    render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} />
-      </MemoryRouter>
-    );
+    renderHiragana();
 
     expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
     await waitFor(() => {
@@ -95,11 +107,7 @@ describe('Hiragana Route', () => {
 
     vi.mocked(loadAllQuizEvents).mockReturnValue(eventsPromise);
 
-    const { unmount } = render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} />
-      </MemoryRouter>
-    );
+    const { unmount } = renderHiragana();
 
     unmount();
     resolveEvents([]);
@@ -109,11 +117,7 @@ describe('Hiragana Route', () => {
   it('preserves initial shuffled order across multiple mounts', async () => {
     vi.mocked(loadAllQuizEvents).mockResolvedValue([]);
 
-    const { unmount } = render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} />
-      </MemoryRouter>
-    );
+    const { unmount } = renderHiragana();
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /practice あ/i })).toBeInTheDocument();
@@ -125,11 +129,7 @@ describe('Hiragana Route', () => {
 
     unmount();
 
-    render(
-      <MemoryRouter>
-        <Page {...({} as unknown as Route.ComponentProps)} />
-      </MemoryRouter>
-    );
+    renderHiragana();
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /practice あ/i })).toBeInTheDocument();
@@ -183,5 +183,80 @@ describe('Hiragana Route', () => {
     await waitFor(() => {
       expect(loadAllQuizEvents).toHaveBeenCalledTimes(EXPECTED_CALL_COUNT_TWICE);
     });
+  });
+
+  it('restores scroll position when navigating to hiragana with restoreScroll state', async () => {
+    vi.mocked(loadAllQuizEvents).mockResolvedValue([]);
+    Object.defineProperty(window, 'scrollY', {
+      value: SCROLL_Y_400,
+      configurable: true,
+      writable: true,
+    });
+
+    const { unmount } = renderHiragana();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
+    });
+
+    // Simulate clicking a card to quiz
+    const quizLink = screen.getByRole('link', { name: /practice あ/i });
+    act(() => {
+      quizLink.click();
+    });
+
+    unmount();
+
+    // Re-render with restoreScroll state
+    renderHiragana([
+      {
+        pathname: '/hiragana',
+        state: { restoreScroll: true },
+      } as unknown as string,
+    ]);
+
+    expect(window.scrollTo).toHaveBeenCalledWith(0, SCROLL_Y_400);
+  });
+
+  it('clears saved scroll position when navigating to home', async () => {
+    vi.mocked(loadAllQuizEvents).mockResolvedValue([]);
+    Object.defineProperty(window, 'scrollY', {
+      value: SCROLL_Y_400,
+      configurable: true,
+      writable: true,
+    });
+
+    // Step 1: Navigate to quiz to store scroll position
+    const { unmount: unmount1 } = renderHiragana();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
+    });
+
+    const quizLink = screen.getByRole('link', { name: /practice あ/i });
+    act(() => {
+      quizLink.click();
+    });
+    unmount1();
+
+    // Step 2: Render hiragana again and click home link to clear position
+    const { unmount: unmount2 } = renderHiragana();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: /hiragana/i })).toBeInTheDocument();
+    });
+
+    const homeLink = screen.getByRole('link', { name: 'Home' });
+    act(() => {
+      homeLink.click();
+    });
+    unmount2();
+
+    // Step 3: Re-render with restoreScroll state; since it was cleared, window.scrollTo should not be called
+    renderHiragana([
+      {
+        pathname: '/hiragana',
+        state: { restoreScroll: true },
+      } as unknown as string,
+    ]);
+
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 });

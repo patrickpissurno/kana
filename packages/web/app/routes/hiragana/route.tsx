@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router';
 import { buttonVariants } from '~/components/ui/button';
 import type { GlyphItem } from '../../components/hiragana/glyph-section';
+import type { UsePreserveScrollPositionProps } from '../../helpers/use-preserve-scroll-position';
 import type { QuizEvent } from '../../types/quiz';
 import type { Route } from './+types/route';
 import { GlyphSection } from '../../components/hiragana/glyph-section';
@@ -13,6 +14,7 @@ import { isCooldownActive } from '../../helpers/is-cooldown-active';
 import { isPracticedToday } from '../../helpers/is-practiced-today';
 import { loadAllQuizEvents } from '../../helpers/load-all-quiz-events';
 import { shuffleArray } from '../../helpers/shuffle-array';
+import { usePreserveScrollPosition } from '../../helpers/use-preserve-scroll-position';
 import { QUIZ_RESULT } from '../../types/quiz';
 
 export function meta({}: Route.MetaArgs) {
@@ -87,7 +89,14 @@ function groupEventsByGlyph(events: QuizEvent[]): Map<string, QuizEvent[]> {
   return map;
 }
 
+const SCROLL_CONFIG: UsePreserveScrollPositionProps = {
+  key: 'hiragana',
+  shouldSave: (next) => next.pathname === '/quiz' || next.pathname === '/practice',
+  shouldClear: (next) => next.pathname === '/',
+};
+
 export default function Page({}: Route.ComponentProps) {
+  usePreserveScrollPosition(SCROLL_CONFIG);
   const outletContext = useOutletContext<{ activationKey?: number } | null>();
   const activationKey = outletContext?.activationKey;
   const [sections, setSections] = useState<SectionState[]>(getInitialSections);
