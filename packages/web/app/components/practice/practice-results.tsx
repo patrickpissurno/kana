@@ -58,44 +58,44 @@ export function PracticeResults({
 
       <header className="mb-8">
         <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-          Practice Complete
+          Practice complete
         </h1>
         <p className="text-muted-foreground text-sm">Summary of your practice session</p>
       </header>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
-          <p className="text-muted-foreground text-xs font-medium">Glyphs Shown</p>
-          <p className="text-foreground mt-2 text-2xl font-bold">{totalQuestions}</p>
-        </div>
-
-        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
-          <p className="text-muted-foreground text-xs font-medium">Correct</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-500">{correctCount}</p>
-        </div>
-
-        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
-          <p className="text-muted-foreground text-xs font-medium">Wrong</p>
-          <p className="text-destructive mt-2 text-2xl font-bold">{wrongCount}</p>
-        </div>
-
-        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
           <p className="text-muted-foreground text-xs font-medium">Accuracy</p>
           <p className="text-foreground mt-2 text-2xl font-bold">{accuracy}%</p>
         </div>
 
         <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
-          <p className="text-muted-foreground text-xs font-medium">Total Duration</p>
+          <p className="text-muted-foreground text-xs font-medium">Avg time / item</p>
+          <p className="text-foreground mt-2 text-2xl font-bold">
+            {formatAverageTime(averageTimeMs)}
+          </p>
+        </div>
+
+        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
+          <p className="text-muted-foreground text-xs font-medium">Total duration</p>
           <p className="text-foreground mt-2 text-2xl font-bold">
             {formatDuration(totalDurationMs)}
           </p>
         </div>
 
         <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
-          <p className="text-muted-foreground text-xs font-medium">Avg Time / Glyph</p>
-          <p className="text-foreground mt-2 text-2xl font-bold">
-            {formatAverageTime(averageTimeMs)}
-          </p>
+          <p className="text-muted-foreground text-xs font-medium">Total questions</p>
+          <p className="text-foreground mt-2 text-2xl font-bold">{totalQuestions}</p>
+        </div>
+
+        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
+          <p className="text-muted-foreground text-xs font-medium">Correct answers</p>
+          <p className="mt-2 text-2xl font-bold">{correctCount}</p>
+        </div>
+
+        <div className="bg-card border-border/80 rounded-2xl border p-4 shadow-xs">
+          <p className="text-muted-foreground text-xs font-medium">Wrong answers</p>
+          <p className="mt-2 text-2xl font-bold">{wrongCount}</p>
         </div>
       </div>
     </div>
