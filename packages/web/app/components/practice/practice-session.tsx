@@ -163,18 +163,18 @@ export function PracticeSession({
         })}
       </div>
 
-      {isAnswered && (
-        <div className="mt-6 flex w-full flex-col items-center gap-2">
-          <Progress
-            value={progressPercent}
-            className="w-full"
-            aria-label="Countdown to next question"
-          />
-          <span className="text-muted-foreground text-xs font-medium">
-            Next in {Math.ceil(countdownRemainingMs / MS_PER_SECOND)}s...
-          </span>
-        </div>
-      )}
+      <div
+        className={cn('mt-6 flex w-full flex-col items-center gap-2', !isAnswered && 'invisible')}
+      >
+        <Progress
+          value={progressPercent}
+          className="w-full"
+          aria-label="Countdown to next question"
+        />
+        <span className="text-muted-foreground text-xs font-medium">
+          Next in {Math.ceil(countdownRemainingMs / MS_PER_SECOND)}s...
+        </span>
+      </div>
     </div>
   );
 }
